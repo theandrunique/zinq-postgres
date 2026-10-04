@@ -3,13 +3,12 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
+use sqlx::prelude::FromRow;
 
 use crate::domain::chats::data::{ChatLoadOptions, ChatLoader};
 use crate::domain::chats::{Chat, ChatMember, ChatPermissions, ChatType};
-use crate::infra::data::common::ScyllaCommon;
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatMemberDb {
     user_id: i64,
     chat_id: i64,
@@ -39,10 +38,9 @@ impl TryFrom<ChatMemberDb> for ChatMember {
     }
 }
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatDb {
     chat_id: i64,
-    #[scylla(rename = "type")]
     chat_type: i32,
     name: Option<String>,
     owner_id: Option<i64>,
@@ -74,22 +72,17 @@ impl TryFrom<ChatDb> for Chat {
     }
 }
 
-pub struct ScyllaChatLoader {
-    session: Arc<Session>,
-    common: ScyllaCommon,
+pub struct PostgresChatLoader {
 }
 
-impl ScyllaChatLoader {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: Arc::clone(&session),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresChatLoader {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
 #[async_trait]
-impl ChatLoader for ScyllaChatLoader {
+impl ChatLoader for PostgresChatLoader {
     async fn load(&self, options: ChatLoadOptions) -> Result<Option<Chat>, anyhow::Error> {
         let chat_id = options
             .chat_id

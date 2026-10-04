@@ -2,14 +2,13 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
+use sqlx::prelude::FromRow;
 
 use crate::{
     domain::chats::{Chat, ChatMember, ChatPermissions, ChatType, data::ChatRepository},
-    infra::data::common::ScyllaCommon,
 };
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatMemberDb {
     user_id: i64,
     chat_id: i64,
@@ -39,10 +38,9 @@ impl TryFrom<ChatMemberDb> for ChatMember {
     }
 }
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatDb {
     chat_id: i64,
-    #[scylla(rename = "type")]
     chat_type: i32,
     name: Option<String>,
     owner_id: Option<i64>,
@@ -96,22 +94,16 @@ impl TryFrom<(ChatDb, Vec<ChatMember>)> for Chat {
     }
 }
 
-pub struct ScyllaChatRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
-}
+pub struct PostgresChatRepository { }
 
-impl ScyllaChatRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresChatRepository {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
 #[async_trait]
-impl ChatRepository for ScyllaChatRepository {
+impl ChatRepository for PostgresChatRepository {
     async fn save(&self, chat: &Chat) -> Result<(), anyhow::Error> {
         let query_chat = "
             INSERT INTO chats_by_id (
@@ -362,13 +354,6 @@ impl ChatRepository for ScyllaChatRepository {
         self.common
             .exec(query, (is_leave, user_id, chat_id))
             .await?;
-        Ok(())
-    }
-
-    async fn update_channel_info(&self, chat_id: i64) -> Result<(), anyhow::Error> {
-        // There is no additional data passed here, so for now this is a no-op.
-        // This can be extended later to update denormalized channel information.
-        let _ = chat_id;
         Ok(())
     }
 

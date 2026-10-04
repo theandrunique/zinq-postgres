@@ -1,15 +1,6 @@
 version: '3.8'
 
 services:
-  scylla:
-    image: scylladb/scylla:6.2.3
-    container_name: scylla
-    ports:
-      - "9042:9042"
-    volumes:
-      - scylla_data:/var/lib/scylla
-    command: --smp 1
-
   mailhog:
     image: mailhog/mailhog
     ports:
@@ -23,7 +14,7 @@ services:
       - "9001:9001"
     command: [ "server", "--console-address", ":9001", "/data" ]
     volumes:
-      - data-minio:/data
+      - data_minio:/data
     environment:
       MINIO_ROOT_USER: miniopass
       MINIO_ROOT_PASSWORD: miniopass
@@ -52,6 +43,5 @@ services:
       - nats_data:/data
 
 volumes:
-  scylla_data:
-  data-minio:
+  data_minio:
   nats_data:

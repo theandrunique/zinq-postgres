@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
+use sqlx::prelude::FromRow;
 
 use crate::{
     domain::auth::{UserSession, data::user_session_repository::UserSessionRepository},
-    infra::data::common::ScyllaCommon,
 };
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct UserSessionDb {
     user_id: i64,
     session_id: i64,
@@ -38,22 +37,16 @@ impl TryFrom<UserSessionDb> for UserSession {
     }
 }
 
-pub struct ScyllaUserSessionRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
-}
+pub struct PostgresUserSessionRepository { }
 
-impl ScyllaUserSessionRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresUserSessionRepository {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
 #[async_trait]
-impl UserSessionRepository for ScyllaUserSessionRepository {
+impl UserSessionRepository for PostgresUserSessionRepository {
     async fn save(&self, session: &UserSession) -> Result<(), anyhow::Error> {
         let query = "
             INSERT INTO sessions (

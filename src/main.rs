@@ -1,12 +1,11 @@
 use std::net::SocketAddr;
 
 use axum::Router;
-use tracing::info;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
-    gateway::gateway, infra::event_bus::NatsEventBus, routers::{
-        auth_router, chat_router, emoji_router, ping_router, start_event_listener, sync_router, user_router, well_known_router,
+    gateway::gateway, routers::{
+        auth_router, chat_router, emoji_router, ping_router, user_router, well_known_router,
     }, state::init_state,
 };
 
@@ -32,7 +31,7 @@ async fn main() {
         .with(env_filter)
         .init();
 
-    info!("Initializing server");
+    tracing::info!("Initializing server");
 
     let app_config = config::config();
 
@@ -44,17 +43,7 @@ async fn main() {
 
     let jetstream = async_nats::jetstream::new(nats_client);
 
-    let nats_event_bus = NatsEventBus::new(jetstream.clone());
-    nats_event_bus
-        .initialize_stream()
-        .await
-        .expect("Failed to initialize NATS stream");
-
     let (socket_layer, io) = gateway(app_state.clone());
-
-    start_event_listener(jetstream, app_state.event_log_repository.clone(), io)
-        .await
-        .expect("Failed to start event listener");
 
     let app = Router::new()
         .nest("/.well-known", well_known_router(app_state.clone()))
@@ -63,7 +52,6 @@ async fn main() {
         .nest("/emoji-packs", emoji_router(app_state.clone()))
         .nest("/chats", chat_router(app_state.clone()))
         .nest("/ping", ping_router())
-        .merge(sync_router(app_state.clone()))
         .layer(socket_layer);
 
     let address = format!("0.0.0.0:{}", app_config.port);
@@ -73,7 +61,7 @@ async fn main() {
         .await
         .expect("Failed to bind");
 
-    info!("Starting server on {}", address);
+    tracing::info!("Starting server on {}", address);
 
     axum::serve(listener, app)
         .await

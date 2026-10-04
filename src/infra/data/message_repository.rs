@@ -2,15 +2,14 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
 use serde_json;
+use sqlx::prelude::FromRow;
 
 use crate::{
     domain::messages::{Message, MessageType, data::MessageRepository},
-    infra::data::common::ScyllaCommon,
 };
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct MessageDb {
     chat_id: i64,
     message_id: i64,
@@ -18,7 +17,6 @@ struct MessageDb {
     content: String,
     timestamp: DateTime<Utc>,
     edited_timestamp: Option<DateTime<Utc>>,
-    #[scylla(rename = "type")]
     message_type: String,
 }
 
@@ -46,22 +44,16 @@ impl TryFrom<MessageDb> for Message {
     }
 }
 
-pub struct ScyllaMessageRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
-}
+pub struct PostgresMessageRepository { }
 
-impl ScyllaMessageRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresMessageRepository {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
 #[async_trait]
-impl MessageRepository for ScyllaMessageRepository {
+impl MessageRepository for PostgresMessageRepository {
     async fn upsert(&self, message: &Message) -> Result<(), anyhow::Error> {
         let query = "
             INSERT INTO messages_by_chat_id (

@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, SerializeRow, client::session::Session};
+use sqlx::prelude::FromRow;
 
 use crate::{
     domain::message_acks::{MessageAck, data::MessageAckRepository},
-    infra::data::common::ScyllaCommon,
 };
 
-#[derive(SerializeRow, DeserializeRow)]
+#[derive(FromRow)]
 struct MessageAckDb {
     chat_id: i64,
     message_id: i64,
@@ -28,22 +27,16 @@ impl From<MessageAckDb> for MessageAck {
     }
 }
 
-pub struct ScyllaMessageAckRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
-}
+pub struct PostgresMessageAckRepository { }
 
-impl ScyllaMessageAckRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: Arc::clone(&session),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresMessageAckRepository {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
 #[async_trait]
-impl MessageAckRepository for ScyllaMessageAckRepository {
+impl MessageAckRepository for PostgresMessageAckRepository {
     async fn upsert(&self, message_ack: &MessageAck) -> Result<(), anyhow::Error> {
         let query = "
             INSERT INTO message_acks (

@@ -2,31 +2,26 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use scylla::client::session::Session;
+use sqlx::prelude::FromRow;
 
 use crate::domain::chats::data::ChatMemberRepository;
-use crate::infra::data::common::ScyllaCommon;
 
-#[derive(Debug, scylla::DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatMemberStatus {
     chat_id: i64,
     is_leave: bool,
 }
 
-pub struct ScyllaChatMemberRepository {
-    common: ScyllaCommon,
-}
+pub struct PostgresChatMemberRepository { }
 
-impl ScyllaChatMemberRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresChatMemberRepository {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
 #[async_trait]
-impl ChatMemberRepository for ScyllaChatMemberRepository {
+impl ChatMemberRepository for PostgresChatMemberRepository {
     async fn get_chat_ids_for_user(
         &self,
         user_id: i64,
