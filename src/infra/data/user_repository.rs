@@ -1,11 +1,9 @@
-use crate::domain::auth::data::user_repository::{
-    AddUserError, UserRepository,
-};
+use crate::domain::auth::data::user_repository::{AddUserError, UserRepository};
 use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{Pool, Postgres};
 use sqlx::prelude::FromRow;
+use sqlx::{Pool, Postgres};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -31,15 +29,36 @@ struct UserDb {
     sessions_ttl: i16,
 }
 
+impl SessionLifetime {
+    pub fn as_i16(&self) -> i16 {
+        match self {
+            SessionLifetime::Week => 1,
+            SessionLifetime::Month => 2,
+            SessionLifetime::Month3 => 3,
+            SessionLifetime::Month6 => 4,
+            SessionLifetime::Month12 => 5,
+        }
+    }
+
+    pub fn from_i16(i: i16) -> Option<SessionLifetime> {
+        match i {
+            1 => Some(SessionLifetime::Week),
+            2 => Some(SessionLifetime::Month),
+            3 => Some(SessionLifetime::Month3),
+            4 => Some(SessionLifetime::Month6),
+            5 => Some(SessionLifetime::Month12),
+            _ => None,
+        }
+    }
+}
+
 impl TryFrom<UserDb> for User {
     type Error = anyhow::Error;
 
     fn try_from(value: UserDb) -> Result<Self, Self::Error> {
-        let sessions_ttl = SessionLifetime::from_i16(value.sessions_ttl)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Unknown session lifetime value: {}",
-                value.sessions_ttl
-            ))?;
+        let sessions_ttl = SessionLifetime::from_i16(value.sessions_ttl).ok_or_else(|| {
+            anyhow::anyhow!("Unknown session lifetime value: {}", value.sessions_ttl)
+        })?;
 
         Ok(User {
             id: value.id,
@@ -105,7 +124,7 @@ impl UserRepository for PostgresUserRepository {
                 password_hash,
                 password_updated_at,
                 sessions_ttl
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)"
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
         )
         .bind(&user.id)
         .bind(&user.username)
@@ -129,44 +148,38 @@ impl UserRepository for PostgresUserRepository {
         Ok(())
     }
 
-
     async fn get_by_id(&self, user_id: i64) -> Result<Option<User>, anyhow::Error> {
-        let user = sqlx::query_as::<_, UserDb>(
-            "SELECT * FROM users WHERE id = $1",
-        )
-        .bind(user_id)
-        .fetch_optional(&self.pool)
-        .await
-        .context("Failed to fetch user by id")?
-        .map(|db| User::try_from(db)?)?;
+        let user = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user by id")?
+            .map(User::try_from)
+            .transpose()?;
 
         Ok(user)
     }
 
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, anyhow::Error> {
-        let user = sqlx::query_as::<_, UserDb>(
-            "SELECT * FROM users WHERE email = $1",
-        )
-        .bind(email)
-        .fetch_optional(&self.pool)
-        .await
-        .context("Failed to fetch user by email")?
-        .map(|db| User::try_from(db)?)
-        .transpose()?;
+        let user = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE email = $1")
+            .bind(email)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user by email")?
+            .map(User::try_from)
+            .transpose()?;
 
         Ok(user)
     }
 
     async fn get_by_username(&self, username: &str) -> Result<Option<User>, anyhow::Error> {
-        let user = sqlx::query_as::<_, UserDb>(
-            "SELECT * FROM users WHERE username = $1",
-        )
-        .bind(username)
-        .fetch_optional(&self.pool)
-        .await
-        .context("Failed to fetch user by username")?
-        .map(|db| User::try_from(db)?)
-        .transpose()?;
+        let user = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user by username")?
+            .map(User::try_from)
+            .transpose()?;
 
         Ok(user)
     }
@@ -176,40 +189,36 @@ impl UserRepository for PostgresUserRepository {
             return Ok(vec![]);
         }
 
-        let users = sqlx::query_as::<_, UserDb>(
-            "SELECT * FROM users WHERE id = ANY($1)",
-        )
-        .bind(user_ids)
-        .fetch_all(&self.pool)
-        .await
-        .context("Failed to fetch users by ids")?
-        .into_iter()
-        .map(|db| User::try_from(db)?)
-        .collect::<Result<Vec<_>, _>>()?;
+        let users = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE id = ANY($1)")
+            .bind(user_ids)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to fetch users by ids")?
+            .into_iter()
+            .map(User::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(users)
     }
 
     async fn exists_by_email(&self, email: &str) -> Result<bool, anyhow::Error> {
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)",
-        )
-        .bind(email)
-        .fetch_one(&self.pool)
-        .await
-        .context("Failed to check email existence")?;
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
+                .bind(email)
+                .fetch_one(&self.pool)
+                .await
+                .context("Failed to check email existence")?;
 
         Ok(exists)
     }
 
     async fn exists_by_username(&self, username: &str) -> Result<bool, anyhow::Error> {
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)",
-        )
-        .bind(username)
-        .fetch_one(&self.pool)
-        .await
-        .context("Failed to check username existence")?;
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+                .bind(username)
+                .fetch_one(&self.pool)
+                .await
+                .context("Failed to check username existence")?;
 
         Ok(exists)
     }

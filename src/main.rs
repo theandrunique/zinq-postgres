@@ -4,9 +4,11 @@ use axum::Router;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
-    gateway::gateway, routers::{
+    gateway::gateway,
+    routers::{
         auth_router, chat_router, emoji_router, ping_router, user_router, well_known_router,
-    }, state::init_state,
+    },
+    state::init_state,
 };
 
 #[cfg(test)]
@@ -37,13 +39,7 @@ async fn main() {
 
     let app_state = init_state().await;
 
-    let nats_client = async_nats::connect(&app_config.nats_url)
-        .await
-        .expect("Failed to connect to NATS");
-
-    let jetstream = async_nats::jetstream::new(nats_client);
-
-    let (socket_layer, io) = gateway(app_state.clone());
+    let (socket_layer, _io) = gateway(app_state.clone());
 
     let app = Router::new()
         .nest("/.well-known", well_known_router(app_state.clone()))

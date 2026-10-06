@@ -1,19 +1,18 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::prelude::FromRow;
+use sqlx::{Pool, Postgres, prelude::FromRow};
 
-use crate::{
-    domain::message_acks::{MessageAck, data::MessageAckRepository},
-};
+use crate::domain::message_acks::{MessageAck, data::MessageAckRepository};
 
 #[derive(FromRow)]
 struct MessageAckDb {
     chat_id: i64,
     message_id: i64,
     user_id: i64,
-    timestamp: DateTime<Utc>,
+    created_at: DateTime<Utc>,
 }
 
 impl From<MessageAckDb> for MessageAck {
@@ -22,42 +21,42 @@ impl From<MessageAckDb> for MessageAck {
             chat_id: value.chat_id,
             message_id: value.message_id,
             user_id: value.user_id,
-            created_at: value.timestamp,
+            created_at: value.created_at,
         }
     }
 }
 
-pub struct PostgresMessageAckRepository { }
+pub struct PostgresMessageAckRepository {
+    pool: Pool<Postgres>,
+}
 
 impl PostgresMessageAckRepository {
-    pub fn new() -> Self {
-        Self { }
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool }
     }
 }
 
 #[async_trait]
 impl MessageAckRepository for PostgresMessageAckRepository {
     async fn upsert(&self, message_ack: &MessageAck) -> Result<(), anyhow::Error> {
-        let query = "
+        sqlx::query(
+            "
             INSERT INTO message_acks (
                 chat_id,
                 message_id,
                 user_id,
-                timestamp
-            ) VALUES (?, ?, ?, ?)
-        ";
+                created_at
+            ) VALUES ($1, $2, $3, $4)
+            ",
+        )
+        .bind(&message_ack.chat_id)
+        .bind(&message_ack.message_id)
+        .bind(&message_ack.user_id)
+        .bind(&message_ack.created_at)
+        .execute(&self.pool)
+        .await
+        .context("Failed to insert message acks")?;
 
-        self.common
-            .exec(
-                query,
-                (
-                    message_ack.chat_id,
-                    message_ack.message_id,
-                    message_ack.user_id,
-                    message_ack.created_at,
-                ),
-            )
-            .await?;
         Ok(())
     }
 
@@ -73,14 +72,22 @@ impl MessageAckRepository for PostgresMessageAckRepository {
         chat_id: i64,
         message_id: i64,
     ) -> Result<Vec<MessageAck>, anyhow::Error> {
-        let query = "
+        let result = sqlx::query_as::<_, MessageAckDb>(
+            "
             SELECT *
             FROM message_acks
-            WHERE chat_id = ? AND message_id = ?
-        ";
+            WHERE chat_id = $1 AND message_id = $2
+            ",
+        )
+        .bind(chat_id)
+        .bind(message_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch message acks")?
+        .into_iter()
+        .map(MessageAck::from)
+        .collect::<Vec<_>>();
 
-        let rows: Vec<MessageAckDb> = self.common.exec_all(query, (chat_id, message_id)).await?;
-
-        Ok(rows.into_iter().map(MessageAck::from).collect())
+        Ok(result)
     }
 }

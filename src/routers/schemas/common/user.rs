@@ -7,15 +7,14 @@ use crate::domain::auth::{SessionLifetime, User};
 pub struct UserPrivateSchema {
     pub id: String,
     pub username: String,
-    pub global_name: String,
+    pub display_name: String,
     pub bio: Option<String>,
     pub avatar: Option<String>,
-    pub timestamp: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 
-    pub sessions_lifetime: SessionLifetime,
-    pub mfa: bool,
+    pub sessions_ttl: SessionLifetime,
     pub email: String,
-    pub is_email_verified: bool,
+    pub email_verified: bool,
 }
 
 impl From<User> for UserPrivateSchema {
@@ -23,14 +22,13 @@ impl From<User> for UserPrivateSchema {
         Self {
             id: value.id.to_string(),
             username: value.username,
-            global_name: value.display_name,
+            display_name: value.display_name,
             bio: value.bio,
             avatar: value.avatar,
-            timestamp: value.created_at,
-            sessions_lifetime: value.sessions_lifetime,
-            mfa: value.mfa,
+            created_at: value.created_at,
+            sessions_ttl: value.sessions_ttl,
             email: value.email,
-            is_email_verified: value.is_email_verified,
+            email_verified: value.email_verified,
         }
     }
 }
@@ -39,10 +37,10 @@ impl From<User> for UserPrivateSchema {
 pub struct UserPublicSchema {
     pub id: String,
     pub username: String,
-    pub global_name: String,
+    pub display_name: String,
     pub bio: Option<String>,
     pub avatar: Option<String>,
-    pub timestamp: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 impl From<User> for UserPublicSchema {
@@ -50,10 +48,10 @@ impl From<User> for UserPublicSchema {
         Self {
             id: value.id.to_string(),
             username: value.username,
-            global_name: value.display_name,
+            display_name: value.display_name,
             bio: value.bio,
             avatar: value.avatar,
-            timestamp: value.created_at,
+            created_at: value.created_at,
         }
     }
 }

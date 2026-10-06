@@ -6,7 +6,9 @@ use crate::{
             ChatCreateMetaMessage, ChatMemberAddedMetaMessage, ChatMemberRemovedMetaMessage,
         },
         services::{AttachmentService, AvatarService, ChannelImageService},
-    }, config::{self, Config}, domain::{
+    },
+    config::{self, Config},
+    domain::{
         attachments::data::AttachmentRepository,
         auth::data::{
             user_repository::UserRepository, user_session_repository::UserSessionRepository,
@@ -15,13 +17,25 @@ use crate::{
         events::Mediator,
         message_acks::data::MessageAckRepository,
         messages::data::MessageRepository,
-    }, infra::{
+    },
+    infra::{
         auth::{
             hash_handler::{BcryptHandler, HashHandler},
             jwks_service::FileJwksService,
             jwt_handler::{JwtHandler, JwtService},
             totp_handler::{TotpHandler, TotpService},
-        }, data::{attachment_repository::PostgresAttachmentRepository, chat_loader::PostgresChatLoader, chat_member_repository::PostgresChatMemberRepository, chat_repotisory::PostgresChatRepository, create_pool, message_ack_repository::PostgresMessageAckRepository, message_repository::PostgresMessageRepository, user_repository::PostgresUserRepository, user_session_repository::PostgresUserSessionRepository}, id_generator::{IdGenerator, SnowflakeIdGenerator}, s3::{AwsS3Service, S3Service}, smtp_client::{SmtpClient, SmtpService},
+        },
+        data::{
+            attachment_repository::PostgresAttachmentRepository, chat_loader::PostgresChatLoader,
+            chat_member_repository::PostgresChatMemberRepository,
+            chat_repotisory::PostgresChatRepository, create_pool,
+            message_ack_repository::PostgresMessageAckRepository,
+            message_repository::PostgresMessageRepository, user_repository::PostgresUserRepository,
+            user_session_repository::PostgresUserSessionRepository,
+        },
+        id_generator::{IdGenerator, SnowflakeIdGenerator},
+        s3::{AwsS3Service, S3Service},
+        smtp_client::{SmtpClient, SmtpService},
     },
 };
 
@@ -83,21 +97,18 @@ pub async fn init_state() -> AppState {
     let channel_image_service =
         Arc::new(ChannelImageService::new(s3_service.clone(), &app_config.s3));
 
-    let client = async_nats::connect(&app_config.nats_url).await.unwrap();
-    let jetstream = async_nats::jetstream::new(client);
-
     let pool = create_pool().await.unwrap();
 
     let mut app_state = AppState {
         id_gen: id_gen.clone(),
         user_repository: Arc::new(PostgresUserRepository::new(pool.clone())),
-        user_session_repository: Arc::new(PostgresUserSessionRepository::new()),
-        chat_loader: Arc::new(PostgresChatLoader::new()),
-        chat_member_repository: Arc::new(PostgresChatMemberRepository::new()),
+        user_session_repository: Arc::new(PostgresUserSessionRepository::new(pool.clone())),
+        chat_loader: Arc::new(PostgresChatLoader::new(pool.clone())),
+        chat_member_repository: Arc::new(PostgresChatMemberRepository::new(pool.clone())),
         chat_repository: Arc::new(PostgresChatRepository::new()),
-        message_repository: Arc::new(PostgresMessageRepository::new()),
-        attachment_repository: Arc::new(PostgresAttachmentRepository::new(pool)),
-        message_ack_repository: Arc::new(PostgresMessageAckRepository::new()),
+        message_repository: Arc::new(PostgresMessageRepository::new(pool.clone())),
+        attachment_repository: Arc::new(PostgresAttachmentRepository::new(pool.clone())),
+        message_ack_repository: Arc::new(PostgresMessageAckRepository::new(pool.clone())),
         hash_handler: Arc::new(BcryptHandler::new()),
         jwks_service: Arc::new(jwks_service.clone()),
         jwt_handler: Arc::new(JwtService::new(

@@ -13,29 +13,6 @@ pub enum SessionLifetime {
     Month12,
 }
 
-impl SessionLifetime {
-    pub fn as_i16(&self) -> i16 {
-        match self {
-            SessionLifetime::Week => 1,
-            SessionLifetime::Month => 2,
-            SessionLifetime::Month3 => 3,
-            SessionLifetime::Month6 => 4,
-            SessionLifetime::Month12 => 5,
-        }
-    }
-
-    pub fn from_i16(i: i16) -> Option<SessionLifetime> {
-        match i {
-            1 => Some(SessionLifetime::Week),
-            2 => Some(SessionLifetime::Month),
-            3 => Some(SessionLifetime::Month3),
-            4 => Some(SessionLifetime::Month6),
-            5 => Some(SessionLifetime::Month12),
-            _ => None,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct User {
     pub id: i64,

@@ -4,7 +4,7 @@ use crate::{
     application::RequestHandler,
     domain::{
         auth::data::user_repository::UserRepository,
-        chats::{Chat, ChatMember, data::ChatRepository},
+        chats::{Chat, ChatMemberInfo, data::ChatRepository},
     },
     error::Error,
     infra::IdGenerator,
@@ -72,7 +72,7 @@ impl RequestHandler for GetDMChatCommandHandler {
         }
 
         let new_chat_id = self.id_gen.gen_id().await;
-        let members: Vec<ChatMember> = users.into_iter().map(ChatMember::from).collect();
+        let members: Vec<ChatMemberInfo> = users.into_iter().map(ChatMemberInfo::from).collect();
         let chat = Chat::create_dm(new_chat_id, members);
 
         self.chat_repository

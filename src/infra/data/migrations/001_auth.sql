@@ -18,14 +18,14 @@ CREATE TABLE IF NOT EXISTS users (
     sessions_ttl smallint NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE IF NOT EXISTS user_sessions (
     id bigint PRIMARY KEY,
     user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     client_name text,
     device_name text,
     location text,
     token_id uuid UNIQUE NOT NULL,
-    last_used_at timestamptz NOT NULL,
+    last_refresh_at timestamptz NOT NULL,
     created_at timestamptz NOT NULL
 );
 

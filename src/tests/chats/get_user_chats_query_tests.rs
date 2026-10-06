@@ -4,7 +4,7 @@ use crate::{
         chats::{CreateChatCommand, CreateChatCommandHandler},
         chats::{GetUserChatsQuery, GetUserChatsQueryHandler},
     },
-    domain::chats::{Chat, ChatMember, ChatType},
+    domain::chats::{Chat, ChatMemberInfo, ChatType},
     tests::common::TestContext,
 };
 

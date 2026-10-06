@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS chats (
     id bigint PRIMARY KEY,
-    owner_id bigint REFERENCES users(id) ON DELETE SET NULL,
     chat_type smallint NOT NULL,
+    owner_id bigint REFERENCES users(id) ON DELETE SET NULL,
 
     name text,
     image text,
@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS messages (
     author_id bigint REFERENCES users(id) ON DELETE SET NULL,
     content text,
     message_type jsonb NOT NULL,
-    created_at timestamptz NOT NULL,
     edited_at timestamptz,
+    created_at timestamptz NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id, id DESC);
@@ -55,11 +55,16 @@ CREATE TABLE IF NOT EXISTS attachments (
     created_at timestamptz NOT NULL,
 );
 
+CREATE INDEX IF NOT EXISTS idx_attachments_chat_id_message_id ON attachments(chat_id, message_id DESC);
+CREATE INDEX IF NOT EXISTS idx_attachments_chat_id ON attachments(chat_id, id DESC);
+
 CREATE TABLE IF NOT EXISTS message_acks (
-    chat_id bigint,
-    message_id bigint,
-    user_id bigint,
-    created_at timestamptz,
+    chat_id bigint NOT NULL,
+    message_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    created_at timestamptz NOT NULL
+
+    PRIMARY KEY (chat_id, message_id, user_id)
 );
 
 CREATE OR REPLACE FUNCTION update_chat_last_message()

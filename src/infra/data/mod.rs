@@ -21,7 +21,9 @@ pub async fn create_pool() -> Result<Pool<Postgres>, sqlx::Error> {
 pub async fn run_migrations(pool: &Pool<Postgres>) -> Result<(), sqlx::Error> {
     tracing::info!("Running migrations...");
 
-    sqlx::migrate!("src/infra/data/migrations").run(pool).await?;
+    sqlx::migrate!("src/infra/data/migrations")
+        .run(pool)
+        .await?;
 
     tracing::info!("Migrations completed successfully");
 
