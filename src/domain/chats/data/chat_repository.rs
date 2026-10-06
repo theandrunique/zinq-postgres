@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::domain::chats::{Chat, ChatMember};
+use crate::domain::chats::{Chat, ChatMemberInfo};
 
 #[async_trait]
 pub trait ChatRepository: Send + Sync {
@@ -16,7 +16,7 @@ pub trait ChatRepository: Send + Sync {
     async fn upsert_channel_member(
         &self,
         chat_id: i64,
-        member: &ChatMember,
+        member: &ChatMemberInfo,
     ) -> Result<(), anyhow::Error>;
     async fn update_is_leave_status(
         &self,
@@ -30,7 +30,6 @@ pub trait ChatRepository: Send + Sync {
         chat_id: i64,
         message_id: i64,
     ) -> Result<(), anyhow::Error>;
-    async fn update_channel_info(&self, chat_id: i64) -> Result<(), anyhow::Error>;
     async fn update_owner_id(&self, chat_id: i64, owner_id: i64) -> Result<(), anyhow::Error>;
     async fn update_last_message_id(
         &self,

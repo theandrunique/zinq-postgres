@@ -1,316 +1,225 @@
-use crate::domain::auth::data::user_repository::{
-    AddUserError, UpdateEmailError, UpdateUsernameError, UserRepository,
-};
-use crate::infra::data::common::ScyllaCommon;
+use crate::domain::auth::data::user_repository::{AddUserError, UserRepository};
+use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::DeserializeRow;
-use scylla::client::session::Session;
+use sqlx::prelude::FromRow;
+use sqlx::{Pool, Postgres};
 use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::domain::auth::{SessionLifetime, User};
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct UserDb {
-    user_id: i64,
+    id: i64,
     username: String,
-    username_updated_timestamp: DateTime<Utc>,
-    password_hash: String,
-    password_updated_timestamp: DateTime<Utc>,
-    avatar: Option<String>,
-    sessions_lifetime: String,
+    username_updated_at: DateTime<Utc>,
+    display_name: String,
     bio: Option<String>,
-    global_name: String,
-    is_active: bool,
-    timestamp: DateTime<Utc>,
-    totp_key: Option<Vec<u8>>,
-    mfa: bool,
     email: String,
-    is_email_verified: bool,
-    email_updated_timestamp: DateTime<Utc>,
+    email_updated_at: DateTime<Utc>,
+    email_verified: bool,
+    is_active: bool,
+    avatar: Option<String>,
+    created_at: DateTime<Utc>,
+
+    totp_key: Option<Vec<u8>>,
+    password_hash: String,
+    password_updated_at: DateTime<Utc>,
+    sessions_ttl: i16,
+}
+
+impl SessionLifetime {
+    pub fn as_i16(&self) -> i16 {
+        match self {
+            SessionLifetime::Week => 1,
+            SessionLifetime::Month => 2,
+            SessionLifetime::Month3 => 3,
+            SessionLifetime::Month6 => 4,
+            SessionLifetime::Month12 => 5,
+        }
+    }
+
+    pub fn from_i16(i: i16) -> Option<SessionLifetime> {
+        match i {
+            1 => Some(SessionLifetime::Week),
+            2 => Some(SessionLifetime::Month),
+            3 => Some(SessionLifetime::Month3),
+            4 => Some(SessionLifetime::Month6),
+            5 => Some(SessionLifetime::Month12),
+            _ => None,
+        }
+    }
 }
 
 impl TryFrom<UserDb> for User {
     type Error = anyhow::Error;
 
     fn try_from(value: UserDb) -> Result<Self, Self::Error> {
+        let sessions_ttl = SessionLifetime::from_i16(value.sessions_ttl).ok_or_else(|| {
+            anyhow::anyhow!("Unknown session lifetime value: {}", value.sessions_ttl)
+        })?;
+
         Ok(User {
-            id: value.user_id,
+            id: value.id,
             username: value.username,
-            username_updated_at: value.username_updated_timestamp,
-            password_hash: value.password_hash,
-            password_updated_at: value.password_updated_timestamp,
-            avatar: value.avatar,
-            sessions_lifetime: SessionLifetime::from_str(&value.sessions_lifetime).map_err(
-                |e| {
-                    anyhow::anyhow!(
-                        "Error parsing sessions_lifetime '{}': {}",
-                        value.sessions_lifetime,
-                        e
-                    )
-                },
-            )?,
+            username_updated_at: value.username_updated_at,
+            display_name: value.display_name,
             bio: value.bio,
-            display_name: value.global_name,
-            is_active: value.is_active,
-            created_at: value.timestamp,
-            totp_key: value.totp_key,
-            mfa: value.mfa,
             email: value.email,
-            is_email_verified: value.is_email_verified,
-            email_updated_at: value.email_updated_timestamp,
+            email_updated_at: value.email_updated_at,
+            email_verified: value.email_verified,
+            is_active: value.is_active,
+            avatar: value.avatar,
+            created_at: value.created_at,
+
+            totp_key: value.totp_key,
+            password_hash: value.password_hash,
+            password_updated_at: value.password_updated_at,
+            sessions_ttl: sessions_ttl,
         })
     }
 }
 
-pub struct ScyllaUserRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
+pub struct PostgresUserRepository {
+    pool: Pool<Postgres>,
 }
 
-impl ScyllaUserRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
+impl PostgresUserRepository {
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool: pool.clone() }
+    }
+
+    fn map_insert_error(err: sqlx::Error, constraint: &str) -> AddUserError {
+        if let sqlx::Error::Database(ref db_err) = err {
+            if db_err.code().as_deref() == Some("23505") {
+                match db_err.constraint() {
+                    Some(c) if c == "users_username_key" => return AddUserError::UsernameTaken,
+                    Some(c) if c == "users_email_key" => return AddUserError::EmailTaken,
+                    _ => {}
+                }
+            }
         }
-    }
-}
-
-impl ScyllaUserRepository {
-    async fn insert_unique(
-        &self,
-        table: &str,
-        key: &str,
-        value: &str,
-        user_id: i64,
-    ) -> Result<bool, anyhow::Error> {
-        let query = format!(
-            "INSERT INTO {} ({}, user_id) VALUES (?, ?) IF NOT EXISTS",
-            table, key
-        );
-
-        let row: Option<(bool, Option<String>, Option<i64>)> =
-            self.common.exec_first(&query, (value, user_id)).await?;
-
-        Ok(row.map(|r| r.0).unwrap_or(false))
-    }
-
-    async fn delete_index(
-        &self,
-        table: &str,
-        field: &str,
-        value: &str,
-    ) -> Result<(), anyhow::Error> {
-        let query = format!("DELETE FROM {} WHERE {} = ?", table, field);
-        self.common.exec(&query, (value,)).await?;
-        Ok(())
-    }
-
-    async fn insert_user(&self, u: &User) -> Result<(), anyhow::Error> {
-        let query = r#"
-            INSERT INTO users (
-                user_id, username, username_updated_timestamp,
-                password_hash, password_updated_timestamp,
-                avatar, sessions_lifetime, bio, global_name,
-                is_active, timestamp, totp_key, mfa,
-                email, is_email_verified, email_updated_timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#;
-
-        self.common
-            .exec(
-                query,
-                (
-                    u.id,
-                    u.username.clone(),
-                    u.username_updated_at,
-                    u.password_hash.clone(),
-                    u.password_updated_at,
-                    u.avatar.clone(),
-                    u.sessions_lifetime.to_string(),
-                    u.bio.clone(),
-                    u.display_name.clone(),
-                    u.is_active,
-                    u.created_at,
-                    u.totp_key.clone(),
-                    u.mfa,
-                    u.email.clone(),
-                    u.is_email_verified,
-                    u.email_updated_at,
-                ),
-            )
-            .await?;
-
-        Ok(())
+        AddUserError::InternalError(err.into())
     }
 }
 
 #[async_trait]
-impl UserRepository for ScyllaUserRepository {
+impl UserRepository for PostgresUserRepository {
     async fn save(&self, user: &User) -> Result<(), AddUserError> {
-        if !self
-            .insert_unique("users_by_username", "username", &user.username, user.id)
-            .await
-            .map_err(AddUserError::InternalError)?
-        {
-            return Err(AddUserError::UsernameTaken);
-        }
-
-        if !self
-            .insert_unique("users_by_email", "email", &user.email, user.id)
-            .await
-            .map_err(AddUserError::InternalError)?
-        {
-            self.delete_index("users_by_username", "username", &user.username)
-                .await
-                .map_err(AddUserError::InternalError)?;
-            return Err(AddUserError::EmailTaken);
-        }
-
-        if let Err(e) = self.insert_user(user).await {
-            let _ = self
-                .delete_index("users_by_username", "username", &user.username)
-                .await;
-            let _ = self
-                .delete_index("users_by_email", "email", &user.email)
-                .await;
-            return Err(AddUserError::InternalError(e));
-        }
+        sqlx::query(
+            "INSERT INTO users (
+                id,
+                username,
+                username_updated_at,
+                display_name,
+                bio,
+                email,
+                email_updated_at,
+                email_verified,
+                is_active,
+                avatar,
+                created_at,
+                totp_key,
+                password_hash,
+                password_updated_at,
+                sessions_ttl
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+        )
+        .bind(&user.id)
+        .bind(&user.username)
+        .bind(&user.username_updated_at)
+        .bind(&user.display_name)
+        .bind(&user.bio)
+        .bind(&user.email)
+        .bind(&user.email_updated_at)
+        .bind(&user.email_verified)
+        .bind(&user.is_active)
+        .bind(&user.avatar)
+        .bind(&user.created_at)
+        .bind(&user.totp_key)
+        .bind(&user.password_hash)
+        .bind(&user.password_updated_at)
+        .bind(&user.sessions_ttl.as_i16())
+        .execute(&self.pool)
+        .await
+        .map_err(|e| Self::map_insert_error(e, ""))?;
 
         Ok(())
     }
 
-    async fn get_by_id(&self, id: i64) -> Result<Option<User>, anyhow::Error> {
-        let row: Option<UserDb> = self
-            .common
-            .exec_first("SELECT * FROM users WHERE user_id = ?", (id,))
-            .await?;
+    async fn get_by_id(&self, user_id: i64) -> Result<Option<User>, anyhow::Error> {
+        let user = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user by id")?
+            .map(User::try_from)
+            .transpose()?;
 
-        row.map(User::try_from).transpose()
+        Ok(user)
     }
 
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, anyhow::Error> {
-        let row: Option<(i64,)> = self
-            .common
-            .exec_first(
-                "SELECT user_id FROM users_by_email WHERE email = ?",
-                (email,),
-            )
-            .await?;
+        let user = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE email = $1")
+            .bind(email)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user by email")?
+            .map(User::try_from)
+            .transpose()?;
 
-        match row {
-            Some((id,)) => self.get_by_id(id).await,
-            None => Ok(None),
-        }
+        Ok(user)
     }
 
     async fn get_by_username(&self, username: &str) -> Result<Option<User>, anyhow::Error> {
-        let row: Option<(i64,)> = self
-            .common
-            .exec_first(
-                "SELECT user_id FROM users_by_username WHERE username = ?",
-                (username,),
-            )
-            .await?;
+        let user = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch user by username")?
+            .map(User::try_from)
+            .transpose()?;
 
-        match row {
-            Some((id,)) => self.get_by_id(id).await,
-            None => Ok(None),
-        }
+        Ok(user)
     }
 
     async fn get_by_ids(&self, user_ids: &[i64]) -> Result<Vec<User>, anyhow::Error> {
         if user_ids.is_empty() {
-            return Ok(Vec::new());
+            return Ok(vec![]);
         }
 
-        let user_dbs: Vec<UserDb> = self
-            .common
-            .exec_all("SELECT * FROM users WHERE user_id IN ?", (user_ids,))
-            .await?;
+        let users = sqlx::query_as::<_, UserDb>("SELECT * FROM users WHERE id = ANY($1)")
+            .bind(user_ids)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to fetch users by ids")?
+            .into_iter()
+            .map(User::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
 
-        user_dbs.into_iter().map(User::try_from).collect()
+        Ok(users)
     }
 
     async fn exists_by_email(&self, email: &str) -> Result<bool, anyhow::Error> {
-        let result: Option<(i64,)> = self
-            .common
-            .exec_first(
-                "SELECT COUNT(1) FROM users_by_email WHERE email = ?",
-                (email,),
-            )
-            .await?;
-        Ok(result.is_some())
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
+                .bind(email)
+                .fetch_one(&self.pool)
+                .await
+                .context("Failed to check email existence")?;
+
+        Ok(exists)
     }
 
     async fn exists_by_username(&self, username: &str) -> Result<bool, anyhow::Error> {
-        let result: Option<(i64,)> = self
-            .common
-            .exec_first(
-                "SELECT COUNT(1) FROM users_by_username WHERE username = ?",
-                (username,),
-            )
-            .await?;
-        Ok(result.is_some())
-    }
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+                .bind(username)
+                .fetch_one(&self.pool)
+                .await
+                .context("Failed to check username existence")?;
 
-    async fn update_email(
-        &self,
-        user_id: i64,
-        email: &str,
-        old_email: &str,
-        ts: DateTime<Utc>,
-        verified: bool,
-    ) -> Result<(), UpdateEmailError> {
-        if !self
-            .insert_unique("users_by_email", "email", email, user_id)
-            .await
-            .map_err(UpdateEmailError::InternalError)?
-        {
-            return Err(UpdateEmailError::EmailTaken);
-        }
-
-        let query = "UPDATE users SET email = ?, email_updated_timestamp = ?, is_email_verified = ? WHERE user_id = ?";
-
-        self.common
-            .exec(query, (email, ts, verified, user_id))
-            .await
-            .map_err(UpdateEmailError::InternalError)?;
-        self.delete_index("users_by_email", "email", old_email)
-            .await
-            .map_err(UpdateEmailError::InternalError)?;
-
-        Ok(())
-    }
-
-    async fn update_username(
-        &self,
-        user_id: i64,
-        username: &str,
-        old_username: &str,
-        ts: DateTime<Utc>,
-    ) -> Result<(), UpdateUsernameError> {
-        if !self
-            .insert_unique("users_by_username", "username", username, user_id)
-            .await
-            .map_err(UpdateUsernameError::InternalError)?
-        {
-            return Err(UpdateUsernameError::UsernameTaken);
-        }
-
-        let query =
-            "UPDATE users SET username = ?, username_updated_timestamp = ? WHERE user_id = ?";
-
-        self.common
-            .exec(query, (username, ts, user_id))
-            .await
-            .map_err(UpdateUsernameError::InternalError)?;
-        self.delete_index("users_by_username", "username", old_username)
-            .await
-            .map_err(UpdateUsernameError::InternalError)?;
-
-        Ok(())
+        Ok(exists)
     }
 }

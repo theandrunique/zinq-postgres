@@ -6,7 +6,7 @@ use crate::{
     domain::{
         auth::data::user_repository::UserRepository,
         chats::{
-            Chat, ChatMember, ChatPermissions, ChatType,
+            Chat, ChatMemberInfo, ChatPermissions, ChatType,
             data::{ChatLoadOptions, ChatLoader, ChatRepository},
         },
         events::{DomainEvent, Mediator},
@@ -116,7 +116,7 @@ impl RequestHandler for AddChatMemberCommandHandler {
             .map_err(Error::InternalServerError)?
             .ok_or_else(|| Error::UserNotFound(request.user_id))?;
 
-        let new_member = ChatMember::from(user);
+        let new_member = ChatMemberInfo::from(user);
 
         self.chat_repository
             .upsert_channel_member(request.chat_id, &new_member)

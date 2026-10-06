@@ -1,13 +1,18 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler, config, domain::auth::{
+    application::RequestHandler,
+    config,
+    domain::auth::{
         UserSession, UserSessionCreateRequest,
         data::{user_repository::UserRepository, user_session_repository::UserSessionRepository},
-    }, error::Error, infra::{
+    },
+    error::Error,
+    infra::{
         auth::{hash_handler::HashHandler, jwt_handler::JwtHandler},
         id_generator::IdGenerator,
-    }, state::AppState,
+    },
+    state::AppState,
 };
 
 #[derive(Debug, validator::Validate, Clone)]

@@ -1,33 +1,25 @@
 use std::sync::Arc;
 
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
 use serde_json;
+use sqlx::{Pool, Postgres, prelude::FromRow};
 
 use crate::{
     domain::messages::{Message, MessageType, data::MessageRepository},
-    infra::data::common::ScyllaCommon,
+    infra::data::message_ack_repository,
 };
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct MessageDb {
+    id: i64,
     chat_id: i64,
-    message_id: i64,
     author_id: i64,
     content: String,
-    timestamp: DateTime<Utc>,
-    edited_timestamp: Option<DateTime<Utc>>,
-    #[scylla(rename = "type")]
     message_type: String,
-}
-
-fn message_type_to_string(t: &MessageType) -> String {
-    serde_json::to_string(t).unwrap_or_else(|_| "{\"type\":\"default\"}".to_string())
-}
-
-fn message_type_from_string(s: &str) -> MessageType {
-    serde_json::from_str(s).unwrap_or(MessageType::Default)
+    edited_at: Option<DateTime<Utc>>,
+    created_at: DateTime<Utc>,
 }
 
 impl TryFrom<MessageDb> for Message {
@@ -35,147 +27,116 @@ impl TryFrom<MessageDb> for Message {
 
     fn try_from(value: MessageDb) -> Result<Self, Self::Error> {
         Ok(Message {
-            id: value.message_id,
+            id: value.id,
             chat_id: value.chat_id,
             author_id: value.author_id,
             content: value.content,
-            created_at: value.timestamp,
-            edited_at: value.edited_timestamp,
-            message_type: message_type_from_string(&value.message_type),
+            message_type: serde_json::from_str(&value.message_type)?,
+            edited_at: value.edited_at,
+            created_at: value.created_at,
         })
     }
 }
 
-pub struct ScyllaMessageRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
+pub struct PostgresMessageRepository {
+    pool: Pool<Postgres>,
 }
 
-impl ScyllaMessageRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresMessageRepository {
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool }
     }
 }
 
 #[async_trait]
-impl MessageRepository for ScyllaMessageRepository {
+impl MessageRepository for PostgresMessageRepository {
     async fn upsert(&self, message: &Message) -> Result<(), anyhow::Error> {
-        let query = "
-            INSERT INTO messages_by_chat_id (
+        let type_json = serde_json::to_string(&message.message_type)?;
+
+        sqlx::query(
+            "
+            INSERT INTO messages (
+                id,
                 chat_id,
-                message_id,
                 author_id,
                 content,
-                timestamp,
-                edited_timestamp,
-                type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ";
-
-        self.common
-            .exec(
-                query,
-                (
-                    message.chat_id,
-                    message.id,
-                    message.author_id,
-                    &message.content,
-                    message.created_at,
-                    message.edited_at,
-                    serde_json::to_string(&message.message_type)?,
-                ),
-            )
-            .await?;
-
-        let update_query = "UPDATE chats_by_id SET last_message_id = ? WHERE chat_id = ?";
-        self.common
-            .exec(update_query, (message.id, message.chat_id))
-            .await?;
+                type,
+                edited_at,
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ",
+        )
+        .bind(&message.id)
+        .bind(&message.chat_id)
+        .bind(&message.author_id)
+        .bind(&message.content)
+        .bind(&type_json)
+        .bind(&message.edited_at)
+        .bind(&message.created_at)
+        .execute(&self.pool)
+        .await
+        .context("Failed to upsert a message")?;
 
         Ok(())
     }
 
-    async fn bulk_upsert(&self, messages: &[Message]) -> Result<(), anyhow::Error> {
-        for message in messages {
-            self.upsert(message).await?;
-        }
-        Ok(())
+    async fn get_by_id(&self, message_id: i64) -> Result<Option<Message>, anyhow::Error> {
+        sqlx::query_as::<_, MessageDb>("SELECT * FROM messages WHERE id = $1")
+            .bind(message_id)
+            .fetch_optional(&self.pool)
+            .await
+            .context("Failed to fetch message by id")?
+            .map(Message::try_from)
+            .transpose()
     }
 
-    async fn get_by_id(
-        &self,
-        chat_id: i64,
-        message_id: i64,
-    ) -> Result<Option<Message>, anyhow::Error> {
-        let query = "
-            SELECT *
-            FROM messages_by_chat_id
-            WHERE chat_id = ? AND message_id = ?
-        ";
-
-        let row: Option<MessageDb> = self.common.exec_first(query, (chat_id, message_id)).await?;
-
-        row.map(Message::try_from).transpose()
-    }
-
-    async fn get_by_ids(
-        &self,
-        chat_id: i64,
-        message_ids: &[i64],
-    ) -> Result<Vec<Message>, anyhow::Error> {
+    async fn get_by_ids(&self, message_ids: &[i64]) -> Result<Vec<Message>, anyhow::Error> {
         if message_ids.is_empty() {
             return Ok(Vec::new());
         }
 
-        let query = "
-            SELECT *
-            FROM messages_by_chat_id
-            WHERE chat_id = ? AND message_id IN ?
-        ";
-
-        let rows: Vec<MessageDb> = self.common.exec_all(query, (chat_id, message_ids)).await?;
-        rows.into_iter().map(Message::try_from).collect()
-    }
-
-    async fn get_lasts_from(&self, chat_ids: &[i64]) -> Result<Vec<Message>, anyhow::Error> {
-        let query = "
-            SELECT *
-            FROM messages_by_chat_id
-            WHERE chat_id IN ?
-            PER PARTITION LIMIT 1
-        ";
-        let rows: Vec<MessageDb> = self.common.exec_all(query, (chat_ids,)).await?;
-        rows.into_iter().map(Message::try_from).collect()
+        sqlx::query_as::<_, MessageDb>("SELECT * FROM messages WHERE id IN $2")
+            .bind(message_ids)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to fetch message by ids")?
+            .into_iter()
+            .map(Message::try_from)
+            .collect::<Result<Vec<_>, _>>()
     }
 
     async fn get_messages(
         &self,
         chat_id: i64,
-        before: i64,
+        before_message_id: i64,
         limit: i32,
     ) -> Result<Vec<Message>, anyhow::Error> {
-        let query = "
+        sqlx::query_as::<_, MessageDb>(
+            "
             SELECT *
-            FROM messages_by_chat_id
-            WHERE chat_id = ? AND message_id < ?
+            FROM messages
+            WHERE chat_id = $1 AND message_id < $2
             ORDER BY message_id DESC
-            LIMIT ?
-        ";
-
-        let rows: Vec<MessageDb> = self
-            .common
-            .exec_all(query, (chat_id, before, limit))
-            .await?;
-
-        rows.into_iter().map(Message::try_from).collect()
+            LIMIT $3
+            ",
+        )
+        .bind(chat_id)
+        .bind(before_message_id)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat message")?
+        .into_iter()
+        .map(Message::try_from)
+        .collect::<Result<Vec<_>, _>>()
     }
 
-    async fn delete_by_id(&self, chat_id: i64, message_id: i64) -> Result<(), anyhow::Error> {
-        let query = "DELETE FROM messages_by_chat_id WHERE chat_id = ? AND message_id = ?";
-        self.common.exec(query, (chat_id, message_id)).await?;
+    async fn delete_by_id(&self, message_id: i64) -> Result<(), anyhow::Error> {
+        sqlx::query("DELETE FROM messages WHERE AND id = $1")
+            .bind(message_id)
+            .execute(&self.pool)
+            .await
+            .context("Failed to delete a message")?;
         Ok(())
     }
 
@@ -185,19 +146,22 @@ impl MessageRepository for ScyllaMessageRepository {
         from_message_id: i64,
         to_message_id: i64,
     ) -> Result<i64, anyhow::Error> {
-        let query = "
+        let result: i64 = sqlx::query_scalar(
+            "
             SELECT COUNT(*)
-            FROM messages_by_chat_id
+            FROM messages
             WHERE chat_id = ?
-                AND message_id >= ?
-                AND message_id <= ?
-            ";
-
-        let result: Option<(i64,)> = self
-            .common
-            .exec_first(query, (chat_id, from_message_id, to_message_id))
-            .await?;
-        Ok(result.map(|(count,)| count).unwrap_or(0))
+                AND id >= ?
+                AND id <= ?
+            ",
+        )
+        .bind(chat_id)
+        .bind(from_message_id)
+        .bind(to_message_id)
+        .fetch_one(&self.pool)
+        .await
+        .context("Failed to count messages")?;
+        Ok(result)
     }
 
     async fn get_message_ids_in_range(
@@ -206,19 +170,22 @@ impl MessageRepository for ScyllaMessageRepository {
         from_message_id: i64,
         to_message_id: i64,
     ) -> Result<Vec<i64>, anyhow::Error> {
-        let query = "
-            SELECT message_id
-            FROM messages_by_chat_id
+        let result: Vec<i64> = sqlx::query_scalar(
+            "
+            SELECT id
+            FROM messages
             WHERE chat_id = ?
-                AND message_id >= ?
-                AND message_id <= ?
-            ";
+                AND id >= ?
+                AND id <= ?
+            ",
+        )
+        .bind(chat_id)
+        .bind(from_message_id)
+        .bind(to_message_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to get message ids in range")?;
 
-        let rows: Vec<(i64,)> = self
-            .common
-            .exec_all(query, (chat_id, from_message_id, to_message_id))
-            .await?;
-
-        Ok(rows.into_iter().map(|(message_id,)| message_id).collect())
+        Ok(result)
     }
 }

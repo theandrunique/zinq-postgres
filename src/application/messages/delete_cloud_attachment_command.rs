@@ -50,7 +50,7 @@ impl RequestHandler for DeleteCloudAttachmentCommandHandler {
 
         let attachment = self
             .attachment_repository
-            .get_by_id(parsed.chat_id, parsed.attachment_id)
+            .get_by_id(parsed.attachment_id)
             .await
             .map_err(Error::InternalServerError)?;
 

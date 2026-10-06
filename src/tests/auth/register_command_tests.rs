@@ -27,7 +27,7 @@ async fn test_register_command_success() {
     assert_eq!(user.email, "test@example.com");
     assert_eq!(user.display_name, "Test User");
     assert!(user.is_active);
-    assert!(!user.is_email_verified);
+    assert!(!user.email_verified);
 }
 
 #[tokio::test]

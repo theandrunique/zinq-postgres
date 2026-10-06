@@ -2,14 +2,11 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
+use sqlx::{Pool, Postgres, prelude::FromRow};
 
-use crate::{
-    domain::chats::{Chat, ChatMember, ChatPermissions, ChatType, data::ChatRepository},
-    infra::data::common::ScyllaCommon,
-};
+use crate::domain::chats::{Chat, ChatPermissions, ChatType, data::ChatRepository};
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatMemberDb {
     user_id: i64,
     chat_id: i64,
@@ -21,11 +18,11 @@ struct ChatMemberDb {
     is_leave: bool,
 }
 
-impl TryFrom<ChatMemberDb> for ChatMember {
+impl TryFrom<ChatMemberDb> for ChatMemberInfo {
     type Error = anyhow::Error;
 
     fn try_from(value: ChatMemberDb) -> Result<Self, Self::Error> {
-        Ok(ChatMember {
+        Ok(ChatMemberInfo {
             user_id: value.user_id,
             last_read_message_id: value.last_read_message_id,
             username: value.username,
@@ -39,10 +36,9 @@ impl TryFrom<ChatMemberDb> for ChatMember {
     }
 }
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct ChatDb {
     chat_id: i64,
-    #[scylla(rename = "type")]
     chat_type: i32,
     name: Option<String>,
     owner_id: Option<i64>,
@@ -67,17 +63,17 @@ impl TryFrom<ChatDb> for Chat {
                 _ => return Err(anyhow::anyhow!("Unknown chat_type: {}", value.chat_type)),
             },
             last_message_id: value.last_message_id,
-            timestamp: value.timestamp,
+            created_at: value.timestamp,
             permissions: ChatPermissions::from_bits_truncate(value.permissions),
             members: Vec::new(),
         })
     }
 }
 
-impl TryFrom<(ChatDb, Vec<ChatMember>)> for Chat {
+impl TryFrom<(ChatDb, Vec<ChatMemberInfo>)> for Chat {
     type Error = anyhow::Error;
 
-    fn try_from((db, members): (ChatDb, Vec<ChatMember>)) -> Result<Self, Self::Error> {
+    fn try_from((db, members): (ChatDb, Vec<ChatMemberInfo>)) -> Result<Self, Self::Error> {
         Ok(Chat {
             id: db.chat_id,
             owner_id: db.owner_id,
@@ -89,29 +85,25 @@ impl TryFrom<(ChatDb, Vec<ChatMember>)> for Chat {
                 _ => return Err(anyhow::anyhow!("Unknown chat_type: {}", db.chat_type)),
             },
             last_message_id: db.last_message_id,
-            timestamp: db.timestamp,
+            created_at: db.timestamp,
             permissions: ChatPermissions::from_bits_truncate(db.permissions),
             members,
         })
     }
 }
 
-pub struct ScyllaChatRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
+pub struct PostgresChatRepository {
+    pool: Pool<Postgres>
 }
 
-impl ScyllaChatRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
-        }
+impl PostgresChatRepository {
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool }
     }
 }
 
 #[async_trait]
-impl ChatRepository for ScyllaChatRepository {
+impl ChatRepository for PostgresChatRepository {
     async fn save(&self, chat: &Chat) -> Result<(), anyhow::Error> {
         let query_chat = "
             INSERT INTO chats_by_id (
@@ -140,7 +132,7 @@ impl ChatRepository for ScyllaChatRepository {
                     &chat.image,
                     chat.last_message_id,
                     chat.permissions.bits(),
-                    chat.timestamp,
+                    chat.created_at,
                 ),
             )
             .await?;
@@ -220,9 +212,9 @@ impl ChatRepository for ScyllaChatRepository {
             )
             .await?;
 
-        let members: Vec<ChatMember> = members_db
+        let members: Vec<ChatMemberInfo> = members_db
             .into_iter()
-            .filter_map(|m| ChatMember::try_from(m).ok())
+            .filter_map(|m| ChatMemberInfo::try_from(m).ok())
             .collect();
 
         let mut chat = Chat::try_from(chat_db)?;
@@ -281,13 +273,13 @@ impl ChatRepository for ScyllaChatRepository {
             .map(|c| c.chat_id)
             .collect();
 
-        let mut members_by_chat: HashMap<i64, Vec<ChatMember>> = HashMap::new();
+        let mut members_by_chat: HashMap<i64, Vec<ChatMemberInfo>> = HashMap::new();
 
         for chat_user in result {
             members_by_chat
                 .entry(chat_user.chat_id)
                 .or_default()
-                .push(ChatMember::try_from(chat_user)?);
+                .push(ChatMemberInfo::try_from(chat_user)?);
         }
 
         if !dm_chat_ids.is_empty() {
@@ -301,7 +293,7 @@ impl ChatRepository for ScyllaChatRepository {
                 members_by_chat
                     .entry(member.chat_id)
                     .or_default()
-                    .push(ChatMember::try_from(member)?);
+                    .push(ChatMemberInfo::try_from(member)?);
             }
         }
 
@@ -319,7 +311,7 @@ impl ChatRepository for ScyllaChatRepository {
     async fn upsert_channel_member(
         &self,
         chat_id: i64,
-        member: &ChatMember,
+        member: &ChatMemberInfo,
     ) -> Result<(), anyhow::Error> {
         let query = "
             INSERT INTO chat_users_by_user_id (
@@ -362,13 +354,6 @@ impl ChatRepository for ScyllaChatRepository {
         self.common
             .exec(query, (is_leave, user_id, chat_id))
             .await?;
-        Ok(())
-    }
-
-    async fn update_channel_info(&self, chat_id: i64) -> Result<(), anyhow::Error> {
-        // There is no additional data passed here, so for now this is a no-op.
-        // This can be extended later to update denormalized channel information.
-        let _ = chat_id;
         Ok(())
     }
 

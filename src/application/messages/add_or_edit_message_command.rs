@@ -123,7 +123,7 @@ impl RequestHandler for AddOrEditMessageCommandHandler {
         if let Some(ref_msg_id) = request.referenced_message_id {
             let msg = self
                 .message_repository
-                .get_by_id(request.chat_id, ref_msg_id)
+                .get_by_id(ref_msg_id)
                 .await
                 .map_err(Error::InternalServerError)?
                 .ok_or(Error::MessageNotFound(ref_msg_id))?;
@@ -133,7 +133,7 @@ impl RequestHandler for AddOrEditMessageCommandHandler {
         if request.message_id.is_some() {
             let mut message = self
                 .message_repository
-                .get_by_id(request.chat_id, message_id)
+                .get_by_id(message_id)
                 .await
                 .map_err(Error::InternalServerError)?
                 .ok_or(Error::MessageNotFound(message_id))?;

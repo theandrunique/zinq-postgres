@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use crate::domain::{
     attachments::Attachment,
     auth::User,
-    chats::{Chat, ChatMember},
+    chats::{Chat, ChatMemberInfo},
     messages::Message,
 };
 
@@ -19,12 +19,12 @@ pub enum DomainEvent {
         chat: Chat,
     },
     ChatMemberAdd {
-        member: ChatMember,
+        member: ChatMemberInfo,
         chat_id: i64,
         initiator_id: i64,
     },
     ChatMemberRemove {
-        member: ChatMember,
+        member: ChatMemberInfo,
         chat_id: i64,
         initiator_id: i64,
     },

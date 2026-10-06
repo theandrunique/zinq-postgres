@@ -9,16 +9,6 @@ pub enum AddUserError {
     InternalError(anyhow::Error),
 }
 
-pub enum UpdateUsernameError {
-    UsernameTaken,
-    InternalError(anyhow::Error),
-}
-
-pub enum UpdateEmailError {
-    EmailTaken,
-    InternalError(anyhow::Error),
-}
-
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn save(&self, user: &User) -> Result<(), AddUserError>;
@@ -30,21 +20,4 @@ pub trait UserRepository: Send + Sync {
 
     async fn exists_by_email(&self, email: &str) -> Result<bool, anyhow::Error>;
     async fn exists_by_username(&self, username: &str) -> Result<bool, anyhow::Error>;
-
-    async fn update_email(
-        &self,
-        user_id: i64,
-        email: &str,
-        old_email: &str,
-        email_updated_at: DateTime<Utc>,
-        verified: bool,
-    ) -> Result<(), UpdateEmailError>;
-
-    async fn update_username(
-        &self,
-        user_id: i64,
-        username: &str,
-        old_username: &str,
-        username_updated_at: DateTime<Utc>,
-    ) -> Result<(), UpdateUsernameError>;
 }

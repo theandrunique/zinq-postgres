@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::domain::chats::{Chat, ChatMember, ChatType};
+use crate::domain::chats::{Chat, ChatMemberInfo, ChatType};
 
 #[derive(Serialize)]
 pub struct ChatMemberSchema {
@@ -12,8 +12,8 @@ pub struct ChatMemberSchema {
     pub permissions: Option<String>,
 }
 
-impl From<ChatMember> for ChatMemberSchema {
-    fn from(value: ChatMember) -> Self {
+impl From<ChatMemberInfo> for ChatMemberSchema {
+    fn from(value: ChatMemberInfo) -> Self {
         Self {
             user_id: value.user_id.to_string(),
             username: value.username,
@@ -70,7 +70,7 @@ impl ChatSchema {
             chat_type: chat.chat_type,
             last_message_id: chat.last_message_id.map(|id| id.to_string()),
             permissions: chat.permissions.to_string(),
-            created_at: chat.timestamp,
+            created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
             last_read_message_id: current_last_read,
             max_read_message_id: max_read_message_id.map(|id| id.to_string()),
@@ -89,7 +89,7 @@ impl From<Chat> for ChatSchema {
             chat_type: chat.chat_type,
             last_message_id: chat.last_message_id.map(|id| id.to_string()),
             permissions: chat.permissions.to_string(),
-            created_at: chat.timestamp,
+            created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
             last_read_message_id: None,
             max_read_message_id: None,

@@ -1,7 +1,12 @@
 use std::sync::Arc;
 
 use crate::{
-    application::{RequestHandler, auth::login_command::LoginCommandResult}, config::config, domain::auth::data::user_session_repository::UserSessionRepository, error::Error, infra::JwtHandler, state::AppState,
+    application::{RequestHandler, auth::login_command::LoginCommandResult},
+    config::config,
+    domain::auth::data::user_session_repository::UserSessionRepository,
+    error::Error,
+    infra::JwtHandler,
+    state::AppState,
 };
 
 pub struct RefreshTokenCommand {

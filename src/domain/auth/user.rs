@@ -3,7 +3,7 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SessionLifetime {
     Week,
@@ -13,52 +13,24 @@ pub enum SessionLifetime {
     Month12,
 }
 
-impl std::fmt::Display for SessionLifetime {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            SessionLifetime::Week => "WEEK",
-            SessionLifetime::Month => "MONTH",
-            SessionLifetime::Month3 => "MONTH3",
-            SessionLifetime::Month6 => "MONTH6",
-            SessionLifetime::Month12 => "MONTH12",
-        };
-        write!(f, "{}", str)
-    }
-}
-
-impl FromStr for SessionLifetime {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "WEEK" => Ok(SessionLifetime::Week),
-            "MONTH" => Ok(SessionLifetime::Month),
-            "MONTH3" => Ok(SessionLifetime::Month3),
-            "MONTH6" => Ok(SessionLifetime::Month6),
-            "MONTH12" => Ok(SessionLifetime::Month12),
-            _ => Err(format!("Unknown SessionLifetime: {}", s)),
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct User {
     pub id: i64,
     pub username: String,
     pub username_updated_at: DateTime<Utc>,
+    pub display_name: String,
+    pub bio: Option<String>,
+    pub email: String,
+    pub email_updated_at: DateTime<Utc>,
+    pub email_verified: bool,
+    pub is_active: bool,
+    pub avatar: Option<String>,
+    pub created_at: DateTime<Utc>,
+
+    pub totp_key: Option<Vec<u8>>,
     pub password_hash: String,
     pub password_updated_at: DateTime<Utc>,
-    pub avatar: Option<String>,
-    pub sessions_lifetime: SessionLifetime,
-    pub bio: Option<String>,
-    pub display_name: String,
-    pub is_active: bool,
-    pub created_at: DateTime<Utc>,
-    pub totp_key: Option<Vec<u8>>,
-    pub mfa: bool,
-    pub email: String,
-    pub is_email_verified: bool,
-    pub email_updated_at: DateTime<Utc>,
+    pub sessions_ttl: SessionLifetime,
 }
 
 pub struct UserCreateRequest {
@@ -77,19 +49,19 @@ impl User {
             id: request.id,
             username: request.username,
             username_updated_at: current_time,
+            display_name: request.display_name,
+            bio: None,
+            email: request.email,
+            email_verified: false,
+            email_updated_at: current_time,
+            is_active: true,
+            avatar: None,
+            created_at: current_time,
+
+            totp_key: None,
             password_hash: request.password_hash,
             password_updated_at: current_time,
-            avatar: None,
-            sessions_lifetime: SessionLifetime::Month3,
-            bio: None,
-            display_name: request.display_name,
-            is_active: true,
-            created_at: current_time,
-            totp_key: None,
-            mfa: false,
-            email: request.email,
-            is_email_verified: false,
-            email_updated_at: current_time,
+            sessions_ttl: SessionLifetime::Month3,
         }
     }
 }

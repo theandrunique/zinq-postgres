@@ -2,7 +2,10 @@ use std::str::FromStr;
 
 use crate::domain::{
     auth::User,
-    chats::{chat_member::ChatMember, chat_permissions::ChatPermissions},
+    chats::{
+        chat_member::{ChatMember, ChatMemberInfo},
+        chat_permissions::ChatPermissions,
+    },
 };
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};
@@ -15,7 +18,7 @@ pub enum ChatType {
     GroupDm,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Chat {
     pub id: i64,
     pub owner_id: Option<i64>,
@@ -24,7 +27,7 @@ pub struct Chat {
     pub chat_type: ChatType,
     pub last_message_id: Option<i64>,
     pub permissions: ChatPermissions,
-    pub timestamp: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 
     pub members: Vec<ChatMember>,
 }
@@ -33,12 +36,12 @@ pub struct CreateGroupChatRequest {
     pub id: i64,
     pub owner_id: i64,
     pub name: String,
-    pub members: Vec<ChatMember>,
+    pub members: Vec<ChatMemberInfo>,
     pub permissions: Option<ChatPermissions>,
 }
 
 impl Chat {
-    pub fn create_dm(id: i64, members: Vec<ChatMember>) -> Self {
+    pub fn create_dm(id: i64, members: Vec<ChatMemberInfo>) -> Self {
         Self {
             id,
             owner_id: None,
@@ -47,7 +50,7 @@ impl Chat {
             chat_type: ChatType::Dm,
             last_message_id: None,
             permissions: ChatPermissions::DM_CHAT,
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members,
         }
     }
@@ -63,12 +66,12 @@ impl Chat {
             permissions: request
                 .permissions
                 .unwrap_or(ChatPermissions::DEFAULT_GROUP_DM_MEMBER),
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members: request.members,
         }
     }
 
-    pub fn get_member(&self, user_id: i64) -> Option<ChatMember> {
+    pub fn get_member(&self, user_id: i64) -> Option<ChatMemberInfo> {
         self.members
             .iter()
             .find(|m| m.user_id == user_id && !m.is_leave)
@@ -128,7 +131,7 @@ mod tests {
             chat_type: ChatType::GroupDm,
             last_message_id: None,
             permissions: ChatPermissions::empty(),
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members: vec![],
         };
 
@@ -142,7 +145,7 @@ mod tests {
     fn member_uses_chat_permissions_when_no_override() {
         let user_id = 1;
 
-        let member = ChatMember::from(user(user_id));
+        let member = ChatMemberInfo::from(user(user_id));
 
         let chat = Chat {
             id: 1,
@@ -152,7 +155,7 @@ mod tests {
             chat_type: ChatType::GroupDm,
             last_message_id: None,
             permissions: ChatPermissions::SEND_MESSAGES | ChatPermissions::SEND_FILES,
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members: vec![member],
         };
 
@@ -165,7 +168,7 @@ mod tests {
     fn member_permissions_override_chat_permissions() {
         let user_id = 1;
 
-        let mut member = ChatMember::from(user(user_id));
+        let mut member = ChatMemberInfo::from(user(user_id));
         member.permissions = Some(ChatPermissions::SEND_MESSAGES);
 
         let chat = Chat {
@@ -176,7 +179,7 @@ mod tests {
             chat_type: ChatType::GroupDm,
             last_message_id: None,
             permissions: ChatPermissions::SEND_MESSAGES | ChatPermissions::SEND_FILES,
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members: vec![member],
         };
 
@@ -194,7 +197,7 @@ mod tests {
             chat_type: ChatType::GroupDm,
             last_message_id: None,
             permissions: ChatPermissions::SEND_MESSAGES,
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members: vec![],
         };
 
@@ -205,7 +208,7 @@ mod tests {
     fn left_member_has_no_permissions() {
         let user_id = 1;
 
-        let mut member = ChatMember::from(user(user_id));
+        let mut member = ChatMemberInfo::from(user(user_id));
         member.is_leave = true;
 
         let chat = Chat {
@@ -216,7 +219,7 @@ mod tests {
             chat_type: ChatType::GroupDm,
             last_message_id: None,
             permissions: ChatPermissions::SEND_MESSAGES,
-            timestamp: Utc::now(),
+            created_at: Utc::now(),
             members: vec![member],
         };
 
@@ -228,7 +231,7 @@ mod tests {
         let user1 = user(1);
         let user2 = user(2);
 
-        let members = vec![ChatMember::from(user1), ChatMember::from(user2)];
+        let members = vec![ChatMemberInfo::from(user1), ChatMemberInfo::from(user2)];
         let chat = Chat::create_dm(1, members);
 
         assert!(chat.has_permission(1, ChatPermissions::SEND_MESSAGES));

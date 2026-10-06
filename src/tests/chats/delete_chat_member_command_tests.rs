@@ -5,7 +5,7 @@ use crate::{
         chats::{DeleteChatMemberCommand, DeleteChatMemberCommandHandler},
     },
     assert_err,
-    domain::chats::{Chat, ChatMember},
+    domain::chats::{Chat, ChatMemberInfo},
     error::Error,
     tests::common::TestContext,
 };

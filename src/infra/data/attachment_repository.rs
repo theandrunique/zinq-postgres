@@ -1,73 +1,69 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla::{DeserializeRow, client::session::Session};
+use sqlx::{Pool, Postgres, QueryBuilder, prelude::FromRow};
 
-use crate::{
-    domain::attachments::{Attachment, data::AttachmentRepository},
-    infra::data::common::ScyllaCommon,
-};
+use crate::domain::attachments::{Attachment, data::AttachmentRepository};
 
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, FromRow)]
 struct AttachmentDb {
-    chat_id: i64,
-    attachment_id: i64,
+    id: i64,
     message_id: i64,
-    content_type: String,
-    duration_secs: Option<f32>,
-    filename: String,
-    is_spoiler: bool,
-    placeholder: Option<String>,
+    chat_id: i64,
+
     storage_key: String,
     size: i64,
+    filename: String,
+    content_type: String,
+
+    duration_secs: Option<f32>,
+    is_spoiler: bool,
+    placeholder: Option<String>,
     waveform: Option<String>,
-    timestamp: DateTime<Utc>,
+    created_at: DateTime<Utc>,
 }
 
-impl TryFrom<AttachmentDb> for Attachment {
-    type Error = anyhow::Error;
-
-    fn try_from(value: AttachmentDb) -> Result<Self, Self::Error> {
-        Ok(Attachment {
-            id: value.attachment_id,
+impl From<AttachmentDb> for Attachment {
+    fn from(value: AttachmentDb) -> Self {
+        Attachment {
+            id: value.id,
             message_id: value.message_id,
             chat_id: value.chat_id,
-            filename: value.filename,
+
             content_type: value.content_type,
+            duration_secs: value.duration_secs,
+            filename: value.filename,
             size: value.size,
             storage_key: value.storage_key,
             placeholder: value.placeholder,
-            duration_secs: value.duration_secs,
             waveform: value.waveform,
             is_spoiler: value.is_spoiler,
-            created_at: value.timestamp,
-        })
-    }
-}
-
-pub struct ScyllaAttachmentRepository {
-    session: Arc<Session>,
-    common: ScyllaCommon,
-}
-
-impl ScyllaAttachmentRepository {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: session.clone(),
-            common: ScyllaCommon::new(session),
+            created_at: value.created_at,
         }
     }
 }
 
+pub struct PostgresAttachmentRepository {
+    pool: Pool<Postgres>,
+}
+
+impl PostgresAttachmentRepository {
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool }
+    }
+}
+
 #[async_trait]
-impl AttachmentRepository for ScyllaAttachmentRepository {
+impl AttachmentRepository for PostgresAttachmentRepository {
     async fn save(&self, attachment: &Attachment) -> Result<(), anyhow::Error> {
-        let query = "
-            INSERT INTO attachments_by_message_id (
-                chat_id,
+        sqlx::query(
+            "
+            INSERT INTO attachments (
+                id,
                 message_id,
-                attachment_id,
+                chat_id,
                 content_type,
                 duration_secs,
                 filename,
@@ -76,78 +72,101 @@ impl AttachmentRepository for ScyllaAttachmentRepository {
                 storage_key,
                 size,
                 waveform,
-                timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ";
-
-        self.common
-            .exec(
-                query,
-                (
-                    attachment.chat_id,
-                    attachment.message_id,
-                    attachment.id,
-                    &attachment.content_type,
-                    attachment.duration_secs,
-                    &attachment.filename,
-                    attachment.is_spoiler,
-                    &attachment.placeholder,
-                    &attachment.storage_key,
-                    attachment.size,
-                    &attachment.waveform,
-                    attachment.created_at,
-                ),
-            )
-            .await?;
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ",
+        )
+        .bind(&attachment.id)
+        .bind(&attachment.message_id)
+        .bind(&attachment.chat_id)
+        .bind(&attachment.content_type)
+        .bind(&attachment.duration_secs)
+        .bind(&attachment.filename)
+        .bind(&attachment.is_spoiler)
+        .bind(&attachment.placeholder)
+        .bind(&attachment.storage_key)
+        .bind(&attachment.size)
+        .bind(&attachment.waveform)
+        .bind(&attachment.created_at)
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
 
     async fn bulk_save(&self, attachments: &[Attachment]) -> Result<(), anyhow::Error> {
-        for attachment in attachments {
-            self.save(attachment).await?;
-        }
+        let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+            "
+            INSERT INTO attachments (
+                id,
+                message_id,
+                chat_id,
+                content_type,
+                duration_secs,
+                filename,
+                is_spoiler,
+                placeholder,
+                storage_key,
+                size,
+                waveform,
+                created_at
+            ) ",
+        );
+        query_builder.push_values(attachments, |mut b, attachment| {
+            b.push_bind(&attachment.id)
+                .push_bind(&attachment.message_id)
+                .push_bind(&attachment.chat_id)
+                .push_bind(&attachment.content_type)
+                .push_bind(&attachment.duration_secs)
+                .push_bind(&attachment.filename)
+                .push_bind(&attachment.is_spoiler)
+                .push_bind(&attachment.placeholder)
+                .push_bind(&attachment.storage_key)
+                .push_bind(&attachment.size)
+                .push_bind(&attachment.waveform)
+                .push_bind(&attachment.created_at);
+        });
+
+        let query = query_builder.build();
+        query.execute(&self.pool).await?;
         Ok(())
     }
 
-    async fn get_by_id(
-        &self,
-        chat_id: i64,
-        attachment_id: i64,
-    ) -> Result<Option<Attachment>, anyhow::Error> {
-        let query = "
-            SELECT *
-            FROM attachments_by_id
-            WHERE chat_id = ? AND attachment_id = ?
-            LIMIT 1
-        ";
+    async fn get_by_id(&self, attachment_id: i64) -> Result<Option<Attachment>, anyhow::Error> {
+        let attachment =
+            sqlx::query_as::<_, AttachmentDb>("SELECT * FROM attachments WHERE id = $1")
+                .bind(attachment_id)
+                .fetch_optional(&self.pool)
+                .await
+                .context("Failed to fetch attachment by id")?
+                .map(Attachment::from);
 
-        let row: Option<AttachmentDb> = self
-            .common
-            .exec_first(query, (chat_id, attachment_id))
-            .await?;
-        row.map(Attachment::try_from).transpose()
+        return Ok(attachment);
     }
 
     async fn get_chat_attachments(
         &self,
         chat_id: i64,
-        before_message_id: i64,
+        before_id: i64,
         limit: i32,
     ) -> Result<Vec<Attachment>, anyhow::Error> {
-        let query = "
-            SELECT *
-            FROM attachments_by_message_id
-            WHERE chat_id = ? AND message_id < ?
-            LIMIT ?
-        ";
+        let attachments = sqlx::query_as::<_, AttachmentDb>(
+            "
+            SELECT * FROM attachments
+            WHERE chat_id = $1 AND id < $2
+            LIMIT $3",
+        )
+        .bind(chat_id)
+        .bind(before_id)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat attachment by chat_id")?
+        .into_iter()
+        .map(Attachment::from)
+        .collect::<Vec<_>>();
 
-        let rows: Vec<AttachmentDb> = self
-            .common
-            .exec_all(query, (chat_id, before_message_id, limit))
-            .await?;
-
-        rows.into_iter().map(Attachment::try_from).collect()
+        return Ok(attachments);
     }
 
     async fn get_by_message_ids(
@@ -155,18 +174,20 @@ impl AttachmentRepository for ScyllaAttachmentRepository {
         chat_id: i64,
         message_ids: &[i64],
     ) -> Result<Vec<Attachment>, anyhow::Error> {
-        if message_ids.is_empty() {
-            return Ok(Vec::new());
-        }
+        let attachments = sqlx::query_as::<_, AttachmentDb>(
+            "
+            SELECT * FROM attachments
+            WHERE chat_id = $1 AND message_id = ANY($2)",
+        )
+        .bind(chat_id)
+        .bind(message_ids)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch attachment by chat_id and message_ids")?
+        .into_iter()
+        .map(Attachment::from)
+        .collect::<Vec<_>>();
 
-        let query = "
-            SELECT *
-            FROM attachments_by_message_id
-            WHERE chat_id = ? AND message_id IN ?
-        ";
-
-        let rows: Vec<AttachmentDb> = self.common.exec_all(query, (chat_id, message_ids)).await?;
-
-        rows.into_iter().map(Attachment::try_from).collect()
+        return Ok(attachments);
     }
 }

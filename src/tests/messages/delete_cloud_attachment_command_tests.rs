@@ -2,7 +2,7 @@ use crate::assert_err;
 use crate::{
     application::RequestHandler,
     application::messages::{DeleteCloudAttachmentCommand, DeleteCloudAttachmentCommandHandler},
-    domain::chats::{Chat, ChatMember, ChatPermissions, CreateGroupChatRequest},
+    domain::chats::{Chat, ChatMemberInfo, ChatPermissions, CreateGroupChatRequest},
     error::Error,
     tests::common::TestContext,
 };
