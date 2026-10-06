@@ -1,17 +1,17 @@
 CREATE TABLE IF NOT EXISTS chats (
     id bigint PRIMARY KEY,
     chat_type smallint NOT NULL,
-    owner_id bigint REFERENCES users(id) ON DELETE SET NULL,
 
+    owner_id bigint REFERENCES users(id) ON DELETE SET NULL,
     name text,
     image text,
 
     last_message_id bigint,
-    last_message_created_at timestamptz,
-    last_message_edited_at timestamptz,
     last_message_content text,
     last_message_type jsonb,
     last_message_author_id bigint REFERENCES users(id) ON DELETE SET NULL,
+    last_message_created_at timestamptz,
+    last_message_edited_at timestamptz,
 
     permissions bigint NOT NULL,
     created_at timestamptz NOT NULL,

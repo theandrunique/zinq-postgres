@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler,
-    domain::chats::{Chat, ChatType, data::ChatRepository},
-    error::Error,
-    state::AppState,
+    application::RequestHandler, domain::chats::{Chat, ChatInfo, ChatType, data::ChatRepository}, error::Error, state::AppState,
 };
 
 #[derive(Debug, Clone)]
@@ -26,21 +23,15 @@ impl GetUserChatsQueryHandler {
 
 impl RequestHandler for GetUserChatsQueryHandler {
     type Request = GetUserChatsQuery;
-    type Output = Vec<Chat>;
+    type Output = Vec<ChatInfo>;
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
-        let mut chats = self
+        let chats = self
             .chat_repository
-            .get_user_chats(request.current_user_id)
+            .get_user_chat_infos(request.current_user_id)
             .await
             .map_err(Error::InternalServerError)?;
-
-        chats.retain(|chat| {
-            let is_dm_without_message =
-                chat.chat_type == ChatType::Dm && chat.last_message_id.is_none();
-            !is_dm_without_message
-        });
 
         Ok(chats)
     }

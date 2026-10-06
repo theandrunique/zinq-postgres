@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::domain::{
     auth::User,
     chats::{
-        chat_member::{ChatMember, ChatMemberInfo},
+        chat_member::{ChatMember},
         chat_permissions::ChatPermissions,
     },
 };
@@ -36,12 +36,12 @@ pub struct CreateGroupChatRequest {
     pub id: i64,
     pub owner_id: i64,
     pub name: String,
-    pub members: Vec<ChatMemberInfo>,
+    pub members: Vec<ChatMember>,
     pub permissions: Option<ChatPermissions>,
 }
 
 impl Chat {
-    pub fn create_dm(id: i64, members: Vec<ChatMemberInfo>) -> Self {
+    pub fn create_dm(id: i64, members: Vec<ChatMember>) -> Self {
         Self {
             id,
             owner_id: None,
@@ -71,7 +71,7 @@ impl Chat {
         }
     }
 
-    pub fn get_member(&self, user_id: i64) -> Option<ChatMemberInfo> {
+    pub fn get_member(&self, user_id: i64) -> Option<ChatMember> {
         self.members
             .iter()
             .find(|m| m.user_id == user_id && !m.is_leave)
@@ -145,7 +145,7 @@ mod tests {
     fn member_uses_chat_permissions_when_no_override() {
         let user_id = 1;
 
-        let member = ChatMemberInfo::from(user(user_id));
+        let member = ChatMember::from(user(user_id));
 
         let chat = Chat {
             id: 1,
@@ -168,7 +168,7 @@ mod tests {
     fn member_permissions_override_chat_permissions() {
         let user_id = 1;
 
-        let mut member = ChatMemberInfo::from(user(user_id));
+        let mut member = ChatMember::from(user(user_id));
         member.permissions = Some(ChatPermissions::SEND_MESSAGES);
 
         let chat = Chat {
@@ -208,7 +208,7 @@ mod tests {
     fn left_member_has_no_permissions() {
         let user_id = 1;
 
-        let mut member = ChatMemberInfo::from(user(user_id));
+        let mut member = ChatMember::from(user(user_id));
         member.is_leave = true;
 
         let chat = Chat {
@@ -231,7 +231,7 @@ mod tests {
         let user1 = user(1);
         let user2 = user(2);
 
-        let members = vec![ChatMemberInfo::from(user1), ChatMemberInfo::from(user2)];
+        let members = vec![ChatMember::from(user1), ChatMember::from(user2)];
         let chat = Chat::create_dm(1, members);
 
         assert!(chat.has_permission(1, ChatPermissions::SEND_MESSAGES));

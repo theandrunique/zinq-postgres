@@ -1,14 +1,9 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler,
-    domain::{
-        auth::data::user_repository::UserRepository,
-        chats::{Chat, ChatMemberInfo, data::ChatRepository},
-    },
-    error::Error,
-    infra::IdGenerator,
-    state::AppState,
+    application::RequestHandler, domain::{
+        auth::data::user_repository::UserRepository, chats::{Chat, ChatInfo, ChatMember, data::ChatRepository},
+    }, error::Error, infra::IdGenerator, state::AppState,
 };
 
 #[derive(Debug, Clone)]
@@ -35,13 +30,13 @@ impl GetDMChatCommandHandler {
 
 impl RequestHandler for GetDMChatCommandHandler {
     type Request = GetDMChatCommand;
-    type Output = Chat;
+    type Output = ChatInfo;
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
         let existing_dm = self
             .chat_repository
-            .get_dm_channel(request.current_user_id, request.user_id)
+            .get_dm_chat_info(request.current_user_id, request.user_id)
             .await
             .map_err(Error::InternalServerError)?;
 
@@ -72,7 +67,7 @@ impl RequestHandler for GetDMChatCommandHandler {
         }
 
         let new_chat_id = self.id_gen.gen_id().await;
-        let members: Vec<ChatMemberInfo> = users.into_iter().map(ChatMemberInfo::from).collect();
+        let members: Vec<ChatMember> = users.into_iter().map(ChatMember::from).collect();
         let chat = Chat::create_dm(new_chat_id, members);
 
         self.chat_repository
@@ -80,6 +75,10 @@ impl RequestHandler for GetDMChatCommandHandler {
             .await
             .map_err(Error::InternalServerError)?;
 
-        Ok(chat)
+        self.chat_repository
+            .get_dm_chat_info(request.current_user_id, request.user_id)
+            .await
+            .map_err(Error::InternalServerError)?
+            .ok_or(Error::InternalServerError(anyhow::anyhow!("Chat expected to be found")))
     }
 }

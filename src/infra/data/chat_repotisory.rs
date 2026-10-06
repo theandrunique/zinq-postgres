@@ -4,30 +4,24 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres, prelude::FromRow};
 
-use crate::domain::chats::{Chat, ChatPermissions, ChatType, data::ChatRepository};
+use crate::domain::chats::{Chat, ChatMember, ChatPermissions, ChatType, data::ChatRepository};
 
 #[derive(Debug, FromRow)]
 struct ChatMemberDb {
-    user_id: i64,
     chat_id: i64,
+    user_id: i64,
     last_read_message_id: Option<i64>,
-    username: String,
-    global_name: String,
-    image: Option<String>,
     permission_overwrites: Option<i64>,
     is_leave: bool,
 }
 
-impl TryFrom<ChatMemberDb> for ChatMemberInfo {
+impl TryFrom<ChatMemberDb> for ChatMember {
     type Error = anyhow::Error;
 
     fn try_from(value: ChatMemberDb) -> Result<Self, Self::Error> {
-        Ok(ChatMemberInfo {
+        Ok(ChatMember {
             user_id: value.user_id,
             last_read_message_id: value.last_read_message_id,
-            username: value.username,
-            global_name: value.global_name,
-            avatar: value.image,
             is_leave: value.is_leave,
             permissions: value
                 .permission_overwrites
@@ -38,14 +32,21 @@ impl TryFrom<ChatMemberDb> for ChatMemberInfo {
 
 #[derive(Debug, FromRow)]
 struct ChatDb {
-    chat_id: i64,
-    chat_type: i32,
-    name: Option<String>,
+    id: i64,
+    chat_type: i16,
     owner_id: Option<i64>,
+    name: Option<String>,
     image: Option<String>,
+
     last_message_id: Option<i64>,
+    last_message_content: Option<String>,
+    last_message_type: Option<String>,
+    last_message_author_id: Option<i64>,
+    last_message_created_at: DateTime<Utc>,
+    last_message_edited_at: DateTime<Utc>,
+
     permissions: i64,
-    timestamp: DateTime<Utc>,
+    created_at: DateTime<Utc>,
 }
 
 impl TryFrom<ChatDb> for Chat {
@@ -53,7 +54,7 @@ impl TryFrom<ChatDb> for Chat {
 
     fn try_from(value: ChatDb) -> Result<Self, Self::Error> {
         Ok(Chat {
-            id: value.chat_id,
+            id: value.id,
             owner_id: value.owner_id,
             name: value.name,
             image: value.image,
@@ -63,7 +64,7 @@ impl TryFrom<ChatDb> for Chat {
                 _ => return Err(anyhow::anyhow!("Unknown chat_type: {}", value.chat_type)),
             },
             last_message_id: value.last_message_id,
-            created_at: value.timestamp,
+            created_at: value.created_at,
             permissions: ChatPermissions::from_bits_truncate(value.permissions),
             members: Vec::new(),
         })
@@ -222,7 +223,7 @@ impl ChatRepository for PostgresChatRepository {
         Ok(Some(chat))
     }
 
-    async fn get_dm_channel(
+    async fn get_dm_chat_info(
         &self,
         user_id1: i64,
         user_id2: i64,
@@ -255,7 +256,7 @@ impl ChatRepository for PostgresChatRepository {
         Ok(result)
     }
 
-    async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error> {
+    async fn get_user_chat_infos(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error> {
         let query = "SELECT * FROM chat_users_by_user_id WHERE user_id = ?";
         let result: Vec<ChatMemberDb> = self.common.exec_all(query, (user_id,)).await?;
         let chat_ids: Vec<i64> = result.iter().map(|v| v.chat_id).collect();
@@ -308,7 +309,7 @@ impl ChatRepository for PostgresChatRepository {
         Ok(chats)
     }
 
-    async fn upsert_channel_member(
+    async fn upsert_chat_member(
         &self,
         chat_id: i64,
         member: &ChatMemberInfo,

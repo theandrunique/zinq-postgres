@@ -1,18 +1,11 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler,
-    core::ValidateExt,
-    domain::{
-        auth::data::user_repository::UserRepository,
-        chats::{
-            Chat, ChatMemberInfo, ChatPermissions, ChatType,
-            data::{ChatLoadOptions, ChatLoader, ChatRepository},
-        },
-        events::{DomainEvent, Mediator},
-    },
-    error::Error,
-    state::AppState,
+    application::RequestHandler, core::ValidateExt, domain::{
+        auth::data::user_repository::UserRepository, chats::{
+            Chat, ChatMember, ChatPermissions, ChatType, data::{ChatLoadOptions, ChatLoader, ChatRepository},
+        }, events::{DomainEvent, Mediator},
+    }, error::Error, state::AppState,
 };
 
 #[derive(Debug, validator::Validate, Clone)]
@@ -116,10 +109,10 @@ impl RequestHandler for AddChatMemberCommandHandler {
             .map_err(Error::InternalServerError)?
             .ok_or_else(|| Error::UserNotFound(request.user_id))?;
 
-        let new_member = ChatMemberInfo::from(user);
+        let new_member = ChatMember::from(user);
 
         self.chat_repository
-            .upsert_channel_member(request.chat_id, &new_member)
+            .upsert_chat_member(request.chat_id, &new_member)
             .await
             .map_err(Error::InternalServerError)?;
 

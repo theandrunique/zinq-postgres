@@ -2,17 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::{auth::User, chats::ChatPermissions};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ChatMemberWithUserInfo {
-    pub user_id: i64,
-    pub last_read_message_id: Option<i64>,
-    pub username: String,
-    pub global_name: String,
-    pub avatar: Option<String>,
-    pub is_leave: bool,
-    pub permissions: Option<ChatPermissions>,
-}
-
 #[derive(Clone, Debug)]
 pub struct ChatMember {
     pub user_id: i64,

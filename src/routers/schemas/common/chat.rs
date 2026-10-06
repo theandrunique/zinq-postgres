@@ -1,23 +1,23 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::domain::chats::{Chat, ChatMemberInfo, ChatType};
+use crate::domain::chats::{Chat, ChatInfo, ChatMemberWithUserInfo, ChatType, LastMessageInfo};
 
 #[derive(Serialize)]
 pub struct ChatMemberSchema {
     pub user_id: String,
     pub username: String,
-    pub global_name: String,
+    pub display_name: String,
     pub avatar: Option<String>,
     pub permissions: Option<String>,
 }
 
-impl From<ChatMemberInfo> for ChatMemberSchema {
-    fn from(value: ChatMemberInfo) -> Self {
+impl From<ChatMemberWithUserInfo> for ChatMemberSchema {
+    fn from(value: ChatMemberWithUserInfo) -> Self {
         Self {
             user_id: value.user_id.to_string(),
             username: value.username,
-            global_name: value.global_name,
+            display_name: value.display_name,
             avatar: value.avatar,
             permissions: value.permissions.map(|p| p.to_string()),
         }
@@ -33,17 +33,17 @@ pub struct ChatSchema {
     pub image: Option<String>,
     #[serde(rename = "type")]
     pub chat_type: ChatType,
-    pub last_message_id: Option<String>,
     pub permissions: String,
     pub created_at: DateTime<Utc>,
     pub members: Vec<ChatMemberSchema>,
+    pub last_message: Option<LastMessageInfo>,
 
     pub last_read_message_id: Option<String>,
     pub max_read_message_id: Option<String>,
 }
 
 impl ChatSchema {
-    pub fn from_chat_for_user(chat: Chat, current_user_id: i64) -> Self {
+    pub fn from_chat_for_user(chat: ChatInfo, current_user_id: i64) -> Self {
         let current_member = chat.get_member(current_user_id);
 
         if current_member.is_none() {
@@ -68,7 +68,7 @@ impl ChatSchema {
             description: Some("".to_string()),
             image: chat.image,
             chat_type: chat.chat_type,
-            last_message_id: chat.last_message_id.map(|id| id.to_string()),
+            last_message: chat.last_message,
             permissions: chat.permissions.to_string(),
             created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
@@ -78,8 +78,8 @@ impl ChatSchema {
     }
 }
 
-impl From<Chat> for ChatSchema {
-    fn from(chat: Chat) -> Self {
+impl From<ChatInfo> for ChatSchema {
+    fn from(chat: ChatInfo) -> Self {
         Self {
             id: chat.id.to_string(),
             owner_id: chat.owner_id.map(|id| id.to_string()),
@@ -87,7 +87,7 @@ impl From<Chat> for ChatSchema {
             description: Some("".to_string()),
             image: chat.image,
             chat_type: chat.chat_type,
-            last_message_id: chat.last_message_id.map(|id| id.to_string()),
+            last_message: chat.last_message,
             permissions: chat.permissions.to_string(),
             created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),

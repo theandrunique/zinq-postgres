@@ -4,10 +4,7 @@ use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::domain::{
-    attachments::Attachment,
-    auth::User,
-    chats::{Chat, ChatMemberInfo},
-    messages::Message,
+    attachments::Attachment, auth::User, chats::{Chat, ChatMember}, messages::Message,
 };
 
 #[derive(Clone, Debug)]
@@ -19,12 +16,12 @@ pub enum DomainEvent {
         chat: Chat,
     },
     ChatMemberAdd {
-        member: ChatMemberInfo,
+        member: ChatMember,
         chat_id: i64,
         initiator_id: i64,
     },
     ChatMemberRemove {
-        member: ChatMemberInfo,
+        member: ChatMember,
         chat_id: i64,
         initiator_id: i64,
     },

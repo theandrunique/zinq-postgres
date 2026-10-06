@@ -1,22 +1,16 @@
 use async_trait::async_trait;
 
-use crate::domain::chats::{Chat, ChatMemberInfo};
+use crate::domain::chats::{Chat, ChatInfo, ChatMember};
 
 #[async_trait]
 pub trait ChatRepository: Send + Sync {
     async fn save(&self, chat: &Chat) -> Result<(), anyhow::Error>;
     async fn get_by_id(&self, chat_id: i64) -> Result<Option<Chat>, anyhow::Error>;
-    async fn get_dm_channel(
-        &self,
-        user_id1: i64,
-        user_id2: i64,
-    ) -> Result<Option<Chat>, anyhow::Error>;
     async fn get_member_ids(&self, chat_id: i64) -> Result<Vec<(i64, bool)>, anyhow::Error>;
-    async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error>;
-    async fn upsert_channel_member(
+    async fn upsert_chat_member(
         &self,
         chat_id: i64,
-        member: &ChatMemberInfo,
+        member: &ChatMember,
     ) -> Result<(), anyhow::Error>;
     async fn update_is_leave_status(
         &self,
@@ -30,10 +24,12 @@ pub trait ChatRepository: Send + Sync {
         chat_id: i64,
         message_id: i64,
     ) -> Result<(), anyhow::Error>;
-    async fn update_owner_id(&self, chat_id: i64, owner_id: i64) -> Result<(), anyhow::Error>;
-    async fn update_last_message_id(
+
+    async fn get_dm_chat_info(
         &self,
-        chat_id: i64,
-        last_message_id: Option<i64>,
-    ) -> Result<(), anyhow::Error>;
+        user_id1: i64,
+        user_id2: i64,
+    ) -> Result<Option<ChatInfo>, anyhow::Error>;
+    async fn get_info_by_id(&self, chat_id: i64) -> Result<Option<ChatInfo>, anyhow::Error>;
+    async fn get_user_chat_infos(&self, user_id: i64) -> Result<Vec<ChatInfo>, anyhow::Error>;
 }

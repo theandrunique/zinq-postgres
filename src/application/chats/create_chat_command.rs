@@ -1,18 +1,11 @@
 use std::{collections::HashSet, sync::Arc};
 
 use crate::{
-    application::RequestHandler,
-    core::ValidateExt,
-    domain::{
-        auth::data::user_repository::UserRepository,
-        chats::{
-            Chat, ChatMemberInfo, ChatPermissions, CreateGroupChatRequest, data::ChatRepository,
-        },
-        events::{DomainEvent, Mediator},
-    },
-    error::Error,
-    infra::IdGenerator,
-    state::AppState,
+    application::RequestHandler, core::ValidateExt, domain::{
+        auth::data::user_repository::UserRepository, chats::{
+            Chat, ChatMember, ChatPermissions, CreateGroupChatRequest, data::ChatRepository,
+        }, events::{DomainEvent, Mediator},
+    }, error::Error, infra::IdGenerator, state::AppState,
 };
 use validator::ValidationError;
 
@@ -84,7 +77,7 @@ impl RequestHandler for CreateChatCommandHandler {
             id: self.id_gen.gen_id().await,
             owner_id: request.current_user_id,
             name: request.name,
-            members: users.into_iter().map(ChatMemberInfo::from).collect(),
+            members: users.into_iter().map(ChatMember::from).collect(),
             permissions: request.permissions,
         });
 
