@@ -60,10 +60,16 @@ impl MessageRepository for PostgresMessageRepository {
                 chat_id,
                 author_id,
                 content,
-                type,
+                message_type,
                 edited_at,
                 created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
+            ON CONFLICT (id) DO UPDATE SET
+                chat_id = EXCLUDED.chat_id,
+                author_id = EXCLUDED.author_id,
+                content = EXCLUDED.content,
+                message_type = EXCLUDED.message_type,
+                edited_at = EXCLUDED.edited_at
             ",
         )
         .bind(&message.id)
@@ -81,7 +87,10 @@ impl MessageRepository for PostgresMessageRepository {
     }
 
     async fn get_by_id(&self, message_id: i64) -> Result<Option<Message>, anyhow::Error> {
-        sqlx::query_as::<_, MessageDb>("SELECT * FROM messages WHERE id = $1")
+        sqlx::query_as::<_, MessageDb>(
+            "SELECT id, chat_id, author_id, content, message_type::text AS message_type, edited_at, created_at
+             FROM messages WHERE id = $1",
+        )
             .bind(message_id)
             .fetch_optional(&self.pool)
             .await
@@ -95,7 +104,10 @@ impl MessageRepository for PostgresMessageRepository {
             return Ok(Vec::new());
         }
 
-        sqlx::query_as::<_, MessageDb>("SELECT * FROM messages WHERE id IN $2")
+        sqlx::query_as::<_, MessageDb>(
+            "SELECT id, chat_id, author_id, content, message_type::text AS message_type, edited_at, created_at
+             FROM messages WHERE id = ANY($1)",
+        )
             .bind(message_ids)
             .fetch_all(&self.pool)
             .await
@@ -113,10 +125,10 @@ impl MessageRepository for PostgresMessageRepository {
     ) -> Result<Vec<Message>, anyhow::Error> {
         sqlx::query_as::<_, MessageDb>(
             "
-            SELECT *
+            SELECT id, chat_id, author_id, content, message_type::text AS message_type, edited_at, created_at
             FROM messages
-            WHERE chat_id = $1 AND message_id < $2
-            ORDER BY message_id DESC
+            WHERE chat_id = $1 AND id < $2
+            ORDER BY id DESC
             LIMIT $3
             ",
         )
@@ -132,7 +144,7 @@ impl MessageRepository for PostgresMessageRepository {
     }
 
     async fn delete_by_id(&self, message_id: i64) -> Result<(), anyhow::Error> {
-        sqlx::query("DELETE FROM messages WHERE AND id = $1")
+        sqlx::query("DELETE FROM messages WHERE id = $1")
             .bind(message_id)
             .execute(&self.pool)
             .await
@@ -150,9 +162,9 @@ impl MessageRepository for PostgresMessageRepository {
             "
             SELECT COUNT(*)
             FROM messages
-            WHERE chat_id = ?
-                AND id >= ?
-                AND id <= ?
+            WHERE chat_id = $1
+                AND id >= $2
+                AND id <= $3
             ",
         )
         .bind(chat_id)
@@ -174,9 +186,9 @@ impl MessageRepository for PostgresMessageRepository {
             "
             SELECT id
             FROM messages
-            WHERE chat_id = ?
-                AND id >= ?
-                AND id <= ?
+            WHERE chat_id = $1
+                AND id >= $2
+                AND id <= $3
             ",
         )
         .bind(chat_id)

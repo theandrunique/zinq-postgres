@@ -29,7 +29,14 @@ impl ChatLoader for PostgresChatLoader {
             .chat_id
             .ok_or_else(|| anyhow::anyhow!("chat_id is required"))?;
 
-        let chat_db = sqlx::query_as::<_, ChatDb>("SELECT * FROM chats WHERE chat_id = $1")
+        let chat_db = sqlx::query_as::<_, ChatDb>(
+            "SELECT id, chat_type, owner_id, name, image,
+                    last_message_id, last_message_content,
+                    last_message_type::text AS last_message_type,
+                    last_message_author_id, last_message_created_at, last_message_edited_at,
+                    permissions, created_at
+             FROM chats WHERE id = $1",
+        )
             .bind(chat_id)
             .fetch_optional(&self.pool)
             .await
@@ -44,7 +51,7 @@ impl ChatLoader for PostgresChatLoader {
             Vec::new()
         } else {
             let members_db: Vec<ChatMember> = sqlx::query_as::<_, ChatMemberDb>(
-                "SELECT * FROM chat_members WHERE chat_id = $1 AND user_id IN $2",
+                "SELECT * FROM chat_members WHERE chat_id = $1 AND user_id = ANY($2)",
             )
             .bind(chat_id)
             .bind(options.member_ids)

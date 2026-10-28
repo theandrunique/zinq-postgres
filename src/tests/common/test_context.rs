@@ -120,6 +120,16 @@ impl TestContext {
     }
 
     async fn setup_database(pool: Pool<Postgres>, database: &str) {
+        let mut drop_builder = sqlx::QueryBuilder::new("DROP DATABASE IF EXISTS ");
+        drop_builder.push(database);
+        drop_builder.push(" WITH (FORCE)");
+
+        drop_builder
+            .build()
+            .execute(&pool)
+            .await
+            .expect("Failed to drop database");
+
         let mut query_builder = sqlx::QueryBuilder::new("CREATE DATABASE ");
         query_builder.push(database);
 

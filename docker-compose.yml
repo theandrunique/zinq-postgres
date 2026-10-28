@@ -1,37 +1,60 @@
-version: '3.8'
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zinq
+    volumes:
+      - data_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zinq"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
   mailhog:
     image: mailhog/mailhog
     ports:
       - 1025:1025
       - 8025:8025
 
-  minio:
-    image: quay.io/minio/minio:latest
+  rustfs:
+    image: rustfs/rustfs:1.0.4
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: [ "server", "--console-address", ":9001", "/data" ]
+      - "9000:9000" # S3 API
+      - "9001:9001" # Console
     volumes:
-      - data_minio:/data
+      - data_rustfs:/data
+      - logs_rustfs:/logs
     environment:
-      MINIO_ROOT_USER: miniopass
-      MINIO_ROOT_PASSWORD: miniopass
-      MINIO_DEFAULT_BUCKETS: zinq
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
-  minio-buckets:
-    image: quay.io/minio/mc:latest
+  rustfs-bucket:
+    image: amazon/aws-cli:latest
     depends_on:
-      - minio
-    restart: on-failure
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set dockerminio http://minio:9000 miniopass miniopass;
-      /usr/bin/mc mb dockerminio/zinq;
-      /usr/bin/mc anonymous set public dockerminio/zinq;
-      exit 0;
-      "
+      rustfs:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - "aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket zinq >/dev/null 2>&1 || aws --endpoint-url http://rustfs:9000 s3 mb s3://zinq"
+    restart: "no"
 
   nats:
     image: nats:latest
@@ -43,5 +66,7 @@ services:
       - nats_data:/data
 
 volumes:
-  data_minio:
+  data_postgres:
+  data_rustfs:
+  logs_rustfs:
   nats_data:

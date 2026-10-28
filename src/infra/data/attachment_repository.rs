@@ -95,6 +95,10 @@ impl AttachmentRepository for PostgresAttachmentRepository {
     }
 
     async fn bulk_save(&self, attachments: &[Attachment]) -> Result<(), anyhow::Error> {
+        if attachments.is_empty() {
+            return Ok(());
+        }
+
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
             "
             INSERT INTO attachments (

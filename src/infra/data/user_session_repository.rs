@@ -105,9 +105,9 @@ impl UserSessionRepository for PostgresUserSessionRepository {
             "
             UPDATE user_sessions
             SET
-                last_refresh_at = ?,
-                token_id = ?
-            WHERE id = ?",
+                last_refresh_at = $1,
+                token_id = $2
+            WHERE id = $3",
         )
         .bind(&session.last_refresh_at)
         .bind(&session.token_id)

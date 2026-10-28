@@ -40,7 +40,7 @@ pub async fn create_chat(
         permissions: None,
     };
 
-    let result = handler.handle(command).await?;
+    handler.handle(command).await?;
 
     Ok(Json(()))
 }

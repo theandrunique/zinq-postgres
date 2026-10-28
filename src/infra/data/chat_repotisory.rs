@@ -156,9 +156,10 @@ impl ChatRepository for PostgresChatRepository {
             .context("Failed to insert chat")?;
 
         // For DM chats also maintain mapping in private_chats
-        if chat.chat_type == ChatType::Dm && chat.members.len() == 2 {
+        if chat.chat_type == ChatType::Dm && !chat.members.is_empty() {
             let user_id1 = chat.members[0].user_id;
-            let user_id2 = chat.members[1].user_id;
+            // Self-DM has a single member, so it maps to itself
+            let user_id2 = chat.members.get(1).map(|m| m.user_id).unwrap_or(user_id1);
             let (u1, u2) = if user_id1 < user_id2 {
                 (user_id1, user_id2)
             } else {
@@ -170,7 +171,8 @@ impl ChatRepository for PostgresChatRepository {
                     user_id1,
                     user_id2,
                     chat_id
-                ) VALUES (?, ?, ?)
+                ) VALUES ($1, $2, $3)
+                ON CONFLICT (user_id1, user_id2) DO NOTHING
             ";
 
             sqlx::query(query_private)
@@ -182,9 +184,8 @@ impl ChatRepository for PostgresChatRepository {
                 .context("Failed to insert private chat")?;
         }
 
-        // Insert members into chat_users_by_user_id
         let query_member = "
-            INSERT INTO chat_users (
+            INSERT INTO chat_members (
                 chat_id,
                 user_id,
                 username,
@@ -193,7 +194,7 @@ impl ChatRepository for PostgresChatRepository {
                 last_read_message_id,
                 permission_overwrites,
                 is_leave
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ";
 
         for member in &chat.members {
@@ -208,7 +209,7 @@ impl ChatRepository for PostgresChatRepository {
                 .bind(member.is_leave)
                 .execute(&self.pool)
                 .await
-                .context("Failed to insert into chat_members");
+                .context("Failed to insert into chat_members")?;
         }
 
         Ok(())
@@ -216,7 +217,12 @@ impl ChatRepository for PostgresChatRepository {
 
     async fn get_by_id(&self, chat_id: i64) -> Result<Option<Chat>, anyhow::Error> {
         let chat_db = sqlx::query_as::<_, ChatDb>(
-            "SELECT * FROM chats_by_id WHERE chat_id = ?"
+            "SELECT id, chat_type, owner_id, name, image,
+                    last_message_id, last_message_content,
+                    last_message_type::text AS last_message_type,
+                    last_message_author_id, last_message_created_at, last_message_edited_at,
+                    permissions, created_at
+             FROM chats WHERE id = $1"
         )
         .bind(chat_id)
         .fetch_optional(&self.pool)
@@ -229,7 +235,7 @@ impl ChatRepository for PostgresChatRepository {
         };
 
         let members_db = sqlx::query_as::<_, ChatMemberDb>(
-            "SELECT * FROM chat_users_by_chat_id WHERE chat_id = ?"
+            "SELECT * FROM chat_members WHERE chat_id = $1"
         )
         .bind(chat_id)
         .fetch_all(&self.pool)
@@ -258,7 +264,7 @@ impl ChatRepository for PostgresChatRepository {
         };
 
         let result = sqlx::query_as::<_, (i64,)>(
-            "SELECT chat_id from private_chats WHERE user_id1 = ? AND user_id2 = ?"
+            "SELECT chat_id from private_chats WHERE user_id1 = $1 AND user_id2 = $2"
         )
         .bind(values.0)
         .bind(values.1)
@@ -274,7 +280,7 @@ impl ChatRepository for PostgresChatRepository {
 
     async fn get_member_ids(&self, chat_id: i64) -> Result<Vec<(i64, bool)>, anyhow::Error> {
         sqlx::query_as::<_, (i64, bool)>(
-            "SELECT user_id, is_leave FROM chat_users_by_chat_id WHERE chat_id = ?"
+            "SELECT user_id, is_leave FROM chat_members WHERE chat_id = $1"
         )
         .bind(chat_id)
         .fetch_all(&self.pool)
@@ -284,7 +290,7 @@ impl ChatRepository for PostgresChatRepository {
 
     async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error> {
         let user_members = sqlx::query_as::<_, ChatMemberDb>(
-            "SELECT * FROM chat_members WHERE user_id = ?"
+            "SELECT * FROM chat_members WHERE user_id = $1"
         )
         .bind(user_id)
         .fetch_all(&self.pool)
@@ -297,7 +303,16 @@ impl ChatRepository for PostgresChatRepository {
             return Ok(vec![]);
         }
 
-        let chats_db = sqlx::query_as::<_, ChatDb>("SELECT * FROM chats WHERE chat_id IN ?")
+        let chats_db = sqlx::query_as::<_, ChatDb>(
+            "SELECT id, chat_type, owner_id, name, image,
+                    last_message_id, last_message_content,
+                    last_message_type::text AS last_message_type,
+                    last_message_author_id, last_message_created_at, last_message_edited_at,
+                    permissions, created_at
+             FROM chats
+             WHERE id = ANY($1)
+               AND (chat_type <> 0 OR last_message_id IS NOT NULL)"
+        )
             .bind(chat_ids)
             .fetch_all(&self.pool)
             .await
@@ -319,7 +334,7 @@ impl ChatRepository for PostgresChatRepository {
         }
 
         if !dm_chat_ids.is_empty() {
-            let members_db = sqlx::query_as::<_, ChatMemberDb>("SELECT * FROM chat_members WHERE chat_id IN ?")
+            let members_db = sqlx::query_as::<_, ChatMemberDb>("SELECT * FROM chat_members WHERE chat_id = ANY($1)")
                 .bind(dm_chat_ids)
                 .fetch_all(&self.pool)
                 .await
@@ -362,7 +377,14 @@ impl ChatRepository for PostgresChatRepository {
                 last_read_message_id,
                 permission_overwrites,
                 is_leave
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (chat_id, user_id) DO UPDATE SET
+                username = EXCLUDED.username,
+                display_name = EXCLUDED.display_name,
+                avatar = EXCLUDED.avatar,
+                last_read_message_id = EXCLUDED.last_read_message_id,
+                permission_overwrites = EXCLUDED.permission_overwrites,
+                is_leave = EXCLUDED.is_leave
         ";
         sqlx::query(query)
             .bind(chat_id)
@@ -386,14 +408,14 @@ impl ChatRepository for PostgresChatRepository {
         is_leave: bool,
     ) -> Result<(), anyhow::Error> {
         sqlx::query(
-            "UPDATE chat_members SET is_leave = ? WHERE user_id = ? AND chat_id = ?"
+            "UPDATE chat_members SET is_leave = $1 WHERE user_id = $2 AND chat_id = $3"
         )
         .bind(is_leave)
         .bind(user_id)
         .bind(chat_id)
         .execute(&self.pool)
         .await
-        .context("Failed to update is_leave in chat_members");
+        .context("Failed to update is_leave in chat_members")?;
         Ok(())
     }
 
@@ -413,7 +435,7 @@ impl ChatRepository for PostgresChatRepository {
         chat_id: i64,
         message_id: i64,
     ) -> Result<(), anyhow::Error> {
-        sqlx::query("UPDATE chat_members SET last_read_message_id = ? WHERE user_id = ? AND chat_id = ?")
+        sqlx::query("UPDATE chat_members SET last_read_message_id = $1 WHERE user_id = $2 AND chat_id = $3")
             .bind(message_id)
             .bind(user_id)
             .bind(chat_id)

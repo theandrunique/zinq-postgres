@@ -37,8 +37,8 @@ impl ChatMemberRepository for PostgresChatMemberRepository {
 
         let rows = sqlx::query_as::<_, (i64, bool)>("
             SELECT chat_id, is_leave
-            FROM chat_users
-            WHERE user_id = ? AND chat_id IN ?
+            FROM chat_members
+            WHERE user_id = $1 AND chat_id = ANY($2)
             ")
             .bind(user_id)
             .bind(chat_ids)

@@ -129,8 +129,7 @@ BEGIN
         username = NEW.username,
         display_name = NEW.display_name,
         avatar = NEW.avatar
-    WHERE user_id = NEW.chat_id
-      AND last_message_id = NEW.id;
+    WHERE user_id = NEW.id;
 
     RETURN NEW;
 END;
