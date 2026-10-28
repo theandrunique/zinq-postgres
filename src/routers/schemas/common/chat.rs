@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::domain::chats::{Chat, ChatInfo, ChatMemberWithUserInfo, ChatType, LastMessageInfo};
+use crate::domain::chats::{Chat, ChatMember, ChatType, LastMessageInfo};
 
 #[derive(Serialize)]
 pub struct ChatMemberSchema {
@@ -12,8 +12,8 @@ pub struct ChatMemberSchema {
     pub permissions: Option<String>,
 }
 
-impl From<ChatMemberWithUserInfo> for ChatMemberSchema {
-    fn from(value: ChatMemberWithUserInfo) -> Self {
+impl From<ChatMember> for ChatMemberSchema {
+    fn from(value: ChatMember) -> Self {
         Self {
             user_id: value.user_id.to_string(),
             username: value.username,
@@ -43,7 +43,7 @@ pub struct ChatSchema {
 }
 
 impl ChatSchema {
-    pub fn from_chat_for_user(chat: ChatInfo, current_user_id: i64) -> Self {
+    pub fn from_chat_for_user(chat: Chat, current_user_id: i64) -> Self {
         let current_member = chat.get_member(current_user_id);
 
         if current_member.is_none() {
@@ -78,8 +78,8 @@ impl ChatSchema {
     }
 }
 
-impl From<ChatInfo> for ChatSchema {
-    fn from(chat: ChatInfo) -> Self {
+impl From<Chat> for ChatSchema {
+    fn from(chat: Chat) -> Self {
         Self {
             id: chat.id.to_string(),
             owner_id: chat.owner_id.map(|id| id.to_string()),

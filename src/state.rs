@@ -97,7 +97,7 @@ pub async fn init_state() -> AppState {
     let channel_image_service =
         Arc::new(ChannelImageService::new(s3_service.clone(), &app_config.s3));
 
-    let pool = create_pool().await.unwrap();
+    let pool = create_pool("postgres://postgres:password@localhost/test").await.unwrap();
 
     let mut app_state = AppState {
         id_gen: id_gen.clone(),
@@ -105,7 +105,7 @@ pub async fn init_state() -> AppState {
         user_session_repository: Arc::new(PostgresUserSessionRepository::new(pool.clone())),
         chat_loader: Arc::new(PostgresChatLoader::new(pool.clone())),
         chat_member_repository: Arc::new(PostgresChatMemberRepository::new(pool.clone())),
-        chat_repository: Arc::new(PostgresChatRepository::new()),
+        chat_repository: Arc::new(PostgresChatRepository::new(pool.clone())),
         message_repository: Arc::new(PostgresMessageRepository::new(pool.clone())),
         attachment_repository: Arc::new(PostgresAttachmentRepository::new(pool.clone())),
         message_ack_repository: Arc::new(PostgresMessageAckRepository::new(pool.clone())),

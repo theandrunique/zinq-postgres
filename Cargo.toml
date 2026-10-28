@@ -24,7 +24,7 @@ async-trait = "0.1.89"
 bitflags = { version = "2.10.0", features = ["serde"] }
 futures-util = "0.3.31"
 testcontainers = "0.26.3"
-testcontainers-modules = { version = "0.14.0", features = ["scylladb", "minio", "nats"] }
+testcontainers-modules = { version = "0.14.0", features = ["scylladb", "minio", "nats", "postgres"] }
 once_cell = "1.21.3"
 ctor = "0.6.3"
 anyhow = "1.0.100"
@@ -46,7 +46,7 @@ aws-sdk-s3 = "1.21.0"
 image = "0.25"
 async-nats = "0.49.1"
 serde_qs = { version = "1.1.2", features = ["axum"] }
-sqlx = { version = "0.9.0", features = ["postgres", "chrono", "uuid"] }
+sqlx = { version = "0.9.0", features = ["postgres", "chrono", "uuid", "runtime-tokio"] }
 
 [[bin]]
 name = "test"

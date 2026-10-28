@@ -90,7 +90,7 @@ impl PostgresUserRepository {
         Self { pool: pool.clone() }
     }
 
-    fn map_insert_error(err: sqlx::Error, constraint: &str) -> AddUserError {
+    fn map_insert_error(err: sqlx::Error) -> AddUserError {
         if let sqlx::Error::Database(ref db_err) = err {
             if db_err.code().as_deref() == Some("23505") {
                 match db_err.constraint() {
@@ -143,7 +143,7 @@ impl UserRepository for PostgresUserRepository {
         .bind(&user.sessions_ttl.as_i16())
         .execute(&self.pool)
         .await
-        .map_err(|e| Self::map_insert_error(e, ""))?;
+        .map_err(|e| Self::map_insert_error(e))?;
 
         Ok(())
     }

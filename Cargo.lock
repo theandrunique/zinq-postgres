@@ -4503,6 +4503,8 @@ dependencies = [
  "sha2 0.10.9",
  "smallvec",
  "thiserror",
+ "tokio",
+ "tokio-stream",
  "tracing",
  "url",
  "uuid",
@@ -4543,6 +4545,7 @@ dependencies = [
  "sqlx-sqlite",
  "syn 2.0.112",
  "thiserror",
+ "tokio",
  "url",
 ]
 

@@ -4,7 +4,7 @@ use crate::{
         chats::{GetDMChatCommand, GetDMChatCommandHandler},
     },
     assert_err,
-    domain::chats::{Chat, ChatMemberInfo, ChatType},
+    domain::chats::{Chat, ChatMember, ChatType},
     error::Error,
     tests::common::TestContext,
 };

@@ -1,37 +1,42 @@
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
+use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres, prelude::FromRow};
 
-use crate::domain::chats::{Chat, ChatMember, ChatPermissions, ChatType, data::ChatRepository};
+use crate::domain::{chats::{Chat, ChatMember, ChatPermissions, ChatType, LastMessageInfo, data::ChatRepository}, messages::MessageType};
 
 #[derive(Debug, FromRow)]
-struct ChatMemberDb {
+pub struct ChatMemberDb {
     chat_id: i64,
     user_id: i64,
+    username: String,
+    display_name: String,
+    avatar: Option<String>,
     last_read_message_id: Option<i64>,
     permission_overwrites: Option<i64>,
     is_leave: bool,
 }
 
-impl TryFrom<ChatMemberDb> for ChatMember {
-    type Error = anyhow::Error;
-
-    fn try_from(value: ChatMemberDb) -> Result<Self, Self::Error> {
-        Ok(ChatMember {
+impl From<ChatMemberDb> for ChatMember {
+    fn from(value: ChatMemberDb) -> Self {
+        ChatMember {
             user_id: value.user_id,
+            username: value.username,
+            display_name: value.display_name,
+            avatar: value.avatar,
             last_read_message_id: value.last_read_message_id,
             is_leave: value.is_leave,
             permissions: value
                 .permission_overwrites
                 .map(ChatPermissions::from_bits_truncate),
-        })
+        }
     }
 }
 
 #[derive(Debug, FromRow)]
-struct ChatDb {
+pub struct ChatDb {
     id: i64,
     chat_type: i16,
     owner_id: Option<i64>,
@@ -42,8 +47,8 @@ struct ChatDb {
     last_message_content: Option<String>,
     last_message_type: Option<String>,
     last_message_author_id: Option<i64>,
-    last_message_created_at: DateTime<Utc>,
-    last_message_edited_at: DateTime<Utc>,
+    last_message_created_at: Option<DateTime<Utc>>,
+    last_message_edited_at: Option<DateTime<Utc>>,
 
     permissions: i64,
     created_at: DateTime<Utc>,
@@ -53,17 +58,45 @@ impl TryFrom<ChatDb> for Chat {
     type Error = anyhow::Error;
 
     fn try_from(value: ChatDb) -> Result<Self, Self::Error> {
+        let chat_type = match value.chat_type {
+            0 => ChatType::Dm,
+            1 => ChatType::GroupDm,
+            _ => return Err(anyhow::anyhow!("Unknown chat_type: {}", value.chat_type)),
+        };
+
+        let last_message = match value.last_message_id {
+            Some(id) => {
+                let author_id = value.last_message_author_id
+                    .ok_or_else(|| anyhow::anyhow!(
+                        "last_message_id is present but author_id is null for chat {}",
+                        value.id
+                    ))?;
+                let message_type: MessageType = serde_json::from_str(&value.last_message_type.ok_or_else(|| anyhow::anyhow!(
+                    "last_message_id is present but last_message_type is null for chat {}", value.id
+                ))?)?;
+                let last_message_created_at = value.last_message_created_at.ok_or_else(|| anyhow::anyhow!(
+                    "last_message_id is present but last_message_created_at is null for chat {}", value.id
+                ))?;
+
+                Some(LastMessageInfo {
+                    message_id: id,
+                    content: value.last_message_content.unwrap_or_default(),
+                    message_type: message_type,
+                    author_id: author_id,
+                    created_at: last_message_created_at,
+                    edited_at: value.last_message_edited_at,
+                })
+            }
+            None => None, // В чате еще нет сообщений
+        };
+
         Ok(Chat {
             id: value.id,
             owner_id: value.owner_id,
             name: value.name,
             image: value.image,
-            chat_type: match value.chat_type {
-                0 => ChatType::Dm,
-                1 => ChatType::GroupDm,
-                _ => return Err(anyhow::anyhow!("Unknown chat_type: {}", value.chat_type)),
-            },
-            last_message_id: value.last_message_id,
+            chat_type: chat_type,
+            last_message: last_message,
             created_at: value.created_at,
             permissions: ChatPermissions::from_bits_truncate(value.permissions),
             members: Vec::new(),
@@ -71,25 +104,13 @@ impl TryFrom<ChatDb> for Chat {
     }
 }
 
-impl TryFrom<(ChatDb, Vec<ChatMemberInfo>)> for Chat {
+impl TryFrom<(ChatDb, Vec<ChatMember>)> for Chat {
     type Error = anyhow::Error;
 
-    fn try_from((db, members): (ChatDb, Vec<ChatMemberInfo>)) -> Result<Self, Self::Error> {
-        Ok(Chat {
-            id: db.chat_id,
-            owner_id: db.owner_id,
-            name: db.name,
-            image: db.image,
-            chat_type: match db.chat_type {
-                0 => ChatType::Dm,
-                1 => ChatType::GroupDm,
-                _ => return Err(anyhow::anyhow!("Unknown chat_type: {}", db.chat_type)),
-            },
-            last_message_id: db.last_message_id,
-            created_at: db.timestamp,
-            permissions: ChatPermissions::from_bits_truncate(db.permissions),
-            members,
-        })
+    fn try_from((chat, members): (ChatDb, Vec<ChatMember>)) -> Result<Self, Self::Error> {
+        let mut chat = Chat::try_from(chat)?;
+        chat.members = members;
+        Ok(chat)
     }
 }
 
@@ -107,36 +128,32 @@ impl PostgresChatRepository {
 impl ChatRepository for PostgresChatRepository {
     async fn save(&self, chat: &Chat) -> Result<(), anyhow::Error> {
         let query_chat = "
-            INSERT INTO chats_by_id (
-                chat_id,
-                type,
+            INSERT INTO chats (
+                id,
+                chat_type,
                 name,
                 owner_id,
                 image,
-                last_message_id,
                 permissions,
-                timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         ";
+        let chat_type = match chat.chat_type {
+            ChatType::Dm => 0,
+            ChatType::GroupDm => 1,
+        };
 
-        self.common
-            .exec(
-                query_chat,
-                (
-                    chat.id,
-                    match chat.chat_type {
-                        ChatType::Dm => 0,
-                        ChatType::GroupDm => 1,
-                    },
-                    &chat.name,
-                    chat.owner_id,
-                    &chat.image,
-                    chat.last_message_id,
-                    chat.permissions.bits(),
-                    chat.created_at,
-                ),
-            )
-            .await?;
+        sqlx::query(query_chat)
+            .bind(&chat.id)
+            .bind(&chat_type)
+            .bind(&chat.name)
+            .bind(&chat.owner_id)
+            .bind(&chat.image)
+            .bind(chat.permissions.bits())
+            .bind(&chat.created_at)
+            .execute(&self.pool)
+            .await
+            .context("Failed to insert chat")?;
 
         // For DM chats also maintain mapping in private_chats
         if chat.chat_type == ChatType::Dm && chat.members.len() == 2 {
@@ -156,66 +173,72 @@ impl ChatRepository for PostgresChatRepository {
                 ) VALUES (?, ?, ?)
             ";
 
-            self.common.exec(query_private, (u1, u2, chat.id)).await?;
+            sqlx::query(query_private)
+                .bind(u1)
+                .bind(u2)
+                .bind(chat.id)
+                .execute(&self.pool)
+                .await
+                .context("Failed to insert private chat")?;
         }
 
         // Insert members into chat_users_by_user_id
         let query_member = "
-            INSERT INTO chat_users_by_user_id (
-                user_id,
+            INSERT INTO chat_users (
                 chat_id,
-                last_read_message_id,
+                user_id,
                 username,
-                global_name,
-                image,
+                display_name,
+                avatar,
+                last_read_message_id,
                 permission_overwrites,
                 is_leave
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
         for member in &chat.members {
-            self.common
-                .exec(
-                    query_member,
-                    (
-                        member.user_id,
-                        chat.id,
-                        member.last_read_message_id,
-                        &member.username,
-                        &member.global_name,
-                        &member.avatar,
-                        member.permissions.as_ref().map(|p| p.bits()),
-                        member.is_leave,
-                    ),
-                )
-                .await?;
+            sqlx::query(query_member)
+                .bind(&chat.id)
+                .bind(&member.user_id)
+                .bind(&member.username)
+                .bind(&member.display_name)
+                .bind(&member.avatar)
+                .bind(&member.last_read_message_id)
+                .bind(member.permissions.as_ref().map(|p| p.bits()))
+                .bind(member.is_leave)
+                .execute(&self.pool)
+                .await
+                .context("Failed to insert into chat_members");
         }
 
         Ok(())
     }
 
     async fn get_by_id(&self, chat_id: i64) -> Result<Option<Chat>, anyhow::Error> {
-        let chat_db: Option<ChatDb> = self
-            .common
-            .exec_first("SELECT * FROM chats_by_id WHERE chat_id = ?", (chat_id,))
-            .await?;
+        let chat_db = sqlx::query_as::<_, ChatDb>(
+            "SELECT * FROM chats_by_id WHERE chat_id = ?"
+        )
+        .bind(chat_id)
+        .fetch_optional(&self.pool)
+        .await
+        .context("Failed to fetch chat")?;
 
         let chat_db = match chat_db {
             Some(c) => c,
             None => return Ok(None),
         };
 
-        let members_db: Vec<ChatMemberDb> = self
-            .common
-            .exec_all(
-                "SELECT * FROM chat_users_by_chat_id WHERE chat_id = ?",
-                (chat_id,),
-            )
-            .await?;
+        let members_db = sqlx::query_as::<_, ChatMemberDb>(
+            "SELECT * FROM chat_users_by_chat_id WHERE chat_id = ?"
+        )
+        .bind(chat_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat members")?;
 
-        let members: Vec<ChatMemberInfo> = members_db
+        let members: Vec<ChatMember> = members_db
             .into_iter()
-            .filter_map(|m| ChatMemberInfo::try_from(m).ok())
+            .map(|m| ChatMember::from(m))
             .collect();
 
         let mut chat = Chat::try_from(chat_db)?;
@@ -223,7 +246,7 @@ impl ChatRepository for PostgresChatRepository {
         Ok(Some(chat))
     }
 
-    async fn get_dm_chat_info(
+    async fn get_dm_chat(
         &self,
         user_id1: i64,
         user_id2: i64,
@@ -234,13 +257,14 @@ impl ChatRepository for PostgresChatRepository {
             (user_id2, user_id1)
         };
 
-        let result: Option<(i64,)> = self
-            .common
-            .exec_first(
-                "SELECT chat_id from private_chats WHERE user_id1 = ? AND user_id2 = ?",
-                values,
-            )
-            .await?;
+        let result = sqlx::query_as::<_, (i64,)>(
+            "SELECT chat_id from private_chats WHERE user_id1 = ? AND user_id2 = ?"
+        )
+        .bind(values.0)
+        .bind(values.1)
+        .fetch_optional(&self.pool)
+        .await
+        .context("Failed to fetch from private_chats")?;
 
         match result {
             Some(result) => self.get_by_id(result.0).await,
@@ -249,43 +273,57 @@ impl ChatRepository for PostgresChatRepository {
     }
 
     async fn get_member_ids(&self, chat_id: i64) -> Result<Vec<(i64, bool)>, anyhow::Error> {
-        let query = "SELECT user_id, is_leave FROM chat_users_by_chat_id WHERE chat_id = ?";
-
-        let result: Vec<(i64, bool)> = self.common.exec_all(query, (chat_id,)).await?;
-
-        Ok(result)
+        sqlx::query_as::<_, (i64, bool)>(
+            "SELECT user_id, is_leave FROM chat_users_by_chat_id WHERE chat_id = ?"
+        )
+        .bind(chat_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch member ids")
     }
 
-    async fn get_user_chat_infos(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error> {
-        let query = "SELECT * FROM chat_users_by_user_id WHERE user_id = ?";
-        let result: Vec<ChatMemberDb> = self.common.exec_all(query, (user_id,)).await?;
-        let chat_ids: Vec<i64> = result.iter().map(|v| v.chat_id).collect();
+    async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error> {
+        let user_members = sqlx::query_as::<_, ChatMemberDb>(
+            "SELECT * FROM chat_members WHERE user_id = ?"
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat members")?;
+
+        let chat_ids: Vec<i64> = user_members.iter().map(|v| v.chat_id).collect();
 
         if chat_ids.is_empty() {
             return Ok(vec![]);
         }
 
-        let query = "SELECT * FROM chats_by_id WHERE chat_id IN ?";
-        let chats_db: Vec<ChatDb> = self.common.exec_all(query, (chat_ids.clone(),)).await?;
+        let chats_db = sqlx::query_as::<_, ChatDb>("SELECT * FROM chats WHERE chat_id IN ?")
+            .bind(chat_ids)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to fetch user chats")?;
 
         let dm_chat_ids: Vec<i64> = chats_db
             .iter()
             .filter(|c| c.chat_type == 0)
-            .map(|c| c.chat_id)
+            .map(|c| c.id)
             .collect();
 
-        let mut members_by_chat: HashMap<i64, Vec<ChatMemberInfo>> = HashMap::new();
+        let mut members_by_chat: HashMap<i64, Vec<ChatMember>> = HashMap::new();
 
-        for chat_user in result {
+        for chat_user in user_members {
             members_by_chat
                 .entry(chat_user.chat_id)
                 .or_default()
-                .push(ChatMemberInfo::try_from(chat_user)?);
+                .push(ChatMember::from(chat_user));
         }
 
         if !dm_chat_ids.is_empty() {
-            let query = "SELECT * FROM chat_users_by_chat_id WHERE chat_id IN ?";
-            let members_db: Vec<ChatMemberDb> = self.common.exec_all(query, (dm_chat_ids,)).await?;
+            let members_db = sqlx::query_as::<_, ChatMemberDb>("SELECT * FROM chat_members WHERE chat_id IN ?")
+                .bind(dm_chat_ids)
+                .fetch_all(&self.pool)
+                .await
+                .context("Failed to fetch chat_members")?;
 
             for member in members_db {
                 if member.user_id == user_id {
@@ -294,14 +332,14 @@ impl ChatRepository for PostgresChatRepository {
                 members_by_chat
                     .entry(member.chat_id)
                     .or_default()
-                    .push(ChatMemberInfo::try_from(member)?);
+                    .push(ChatMember::from(member));
             }
         }
 
         let chats: Vec<Chat> = chats_db
             .into_iter()
             .map(|chat_db| {
-                let members = members_by_chat.remove(&chat_db.chat_id).unwrap_or_default();
+                let members = members_by_chat.remove(&chat_db.id).unwrap_or_default();
                 Chat::try_from((chat_db, members))
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -312,35 +350,32 @@ impl ChatRepository for PostgresChatRepository {
     async fn upsert_chat_member(
         &self,
         chat_id: i64,
-        member: &ChatMemberInfo,
+        member: &ChatMember,
     ) -> Result<(), anyhow::Error> {
         let query = "
-            INSERT INTO chat_users_by_user_id (
-                user_id,
+            INSERT INTO chat_members (
                 chat_id,
-                last_read_message_id,
+                user_id,
                 username,
-                global_name,
-                image,
+                display_name,
+                avatar,
+                last_read_message_id,
                 permission_overwrites,
                 is_leave
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ";
-        self.common
-            .exec(
-                query,
-                (
-                    member.user_id,
-                    chat_id,
-                    member.last_read_message_id,
-                    &member.username,
-                    &member.global_name,
-                    &member.avatar,
-                    member.permissions.as_ref().map(|v| v.bits()),
-                    member.is_leave,
-                ),
-            )
-            .await?;
+        sqlx::query(query)
+            .bind(chat_id)
+            .bind(&member.user_id)
+            .bind(&member.username)
+            .bind(&member.display_name)
+            .bind(&member.avatar)
+            .bind(&member.last_read_message_id)
+            .bind(member.permissions.as_ref().map(|p| p.bits()))
+            .bind(member.is_leave)
+            .execute(&self.pool)
+            .await
+            .context("Failed to insert into chat_members")?;
         Ok(())
     }
 
@@ -350,29 +385,27 @@ impl ChatRepository for PostgresChatRepository {
         chat_id: i64,
         is_leave: bool,
     ) -> Result<(), anyhow::Error> {
-        let query =
-            "UPDATE chat_users_by_user_id SET is_leave = ? WHERE user_id = ? AND chat_id = ?";
-        self.common
-            .exec(query, (is_leave, user_id, chat_id))
-            .await?;
+        sqlx::query(
+            "UPDATE chat_members SET is_leave = ? WHERE user_id = ? AND chat_id = ?"
+        )
+        .bind(is_leave)
+        .bind(user_id)
+        .bind(chat_id)
+        .execute(&self.pool)
+        .await
+        .context("Failed to update is_leave in chat_members");
         Ok(())
     }
 
-    async fn update_owner_id(&self, chat_id: i64, owner_id: i64) -> Result<(), anyhow::Error> {
-        let query = "UPDATE chats_by_id SET owner_id = ? WHERE chat_id = ?";
-        self.common.exec(query, (owner_id, chat_id)).await?;
-        Ok(())
-    }
-
-    async fn update_last_message_id(
-        &self,
-        chat_id: i64,
-        last_message_id: Option<i64>,
-    ) -> Result<(), anyhow::Error> {
-        let query = "UPDATE chats_by_id SET last_message_id = ? WHERE chat_id = ?";
-        self.common.exec(query, (last_message_id, chat_id)).await?;
-        Ok(())
-    }
+    // async fn update_owner_id(&self, chat_id: i64, owner_id: i64) -> Result<(), anyhow::Error> {
+    //     sqlx::query("UPDATE chats SET owner_id = ? WHERE chat_id = ?")
+    //         .bind(owner_id)
+    //         .bind(chat_id)
+    //         .execute(&self.pool)
+    //         .await
+    //         .context("Failed to update owner_id in chats")?;
+    //     Ok(())
+    // }
 
     async fn update_last_read_message_id(
         &self,
@@ -380,10 +413,13 @@ impl ChatRepository for PostgresChatRepository {
         chat_id: i64,
         message_id: i64,
     ) -> Result<(), anyhow::Error> {
-        let query = "UPDATE chat_users_by_user_id SET last_read_message_id = ? WHERE user_id = ? AND chat_id = ?";
-        self.common
-            .exec(query, (message_id, user_id, chat_id))
-            .await?;
+        sqlx::query("UPDATE chat_members SET last_read_message_id = ? WHERE user_id = ? AND chat_id = ?")
+            .bind(message_id)
+            .bind(user_id)
+            .bind(chat_id)
+            .execute(&self.pool)
+            .await
+            .context("Failed to update last_read_message_id in chat_members")?;
         Ok(())
     }
 }

@@ -1,11 +1,9 @@
 use std::str::FromStr;
 
 use crate::domain::{
-    auth::User,
-    chats::{
-        chat_member::{ChatMember},
-        chat_permissions::ChatPermissions,
-    },
+    auth::User, chats::{
+        chat_member::ChatMember, chat_permissions::ChatPermissions,
+    }, messages::MessageType,
 };
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};
@@ -18,6 +16,16 @@ pub enum ChatType {
     GroupDm,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct LastMessageInfo {
+    pub message_id: i64,
+    pub author_id: i64,
+    pub content: String,
+    pub message_type: MessageType,
+    pub edited_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
 #[derive(Clone, Debug)]
 pub struct Chat {
     pub id: i64,
@@ -25,7 +33,7 @@ pub struct Chat {
     pub name: Option<String>,
     pub image: Option<String>,
     pub chat_type: ChatType,
-    pub last_message_id: Option<i64>,
+    pub last_message: Option<LastMessageInfo>,
     pub permissions: ChatPermissions,
     pub created_at: DateTime<Utc>,
 
@@ -48,7 +56,7 @@ impl Chat {
             name: None,
             image: None,
             chat_type: ChatType::Dm,
-            last_message_id: None,
+            last_message: None,
             permissions: ChatPermissions::DM_CHAT,
             created_at: Utc::now(),
             members,
@@ -62,7 +70,7 @@ impl Chat {
             name: Some(request.name),
             image: None,
             chat_type: ChatType::GroupDm,
-            last_message_id: None,
+            last_message: None,
             permissions: request
                 .permissions
                 .unwrap_or(ChatPermissions::DEFAULT_GROUP_DM_MEMBER),
@@ -129,7 +137,7 @@ mod tests {
             name: Some("test".into()),
             image: None,
             chat_type: ChatType::GroupDm,
-            last_message_id: None,
+            last_message: None,
             permissions: ChatPermissions::empty(),
             created_at: Utc::now(),
             members: vec![],
@@ -153,7 +161,7 @@ mod tests {
             name: None,
             image: None,
             chat_type: ChatType::GroupDm,
-            last_message_id: None,
+            last_message: None,
             permissions: ChatPermissions::SEND_MESSAGES | ChatPermissions::SEND_FILES,
             created_at: Utc::now(),
             members: vec![member],
@@ -177,7 +185,7 @@ mod tests {
             name: None,
             image: None,
             chat_type: ChatType::GroupDm,
-            last_message_id: None,
+            last_message: None,
             permissions: ChatPermissions::SEND_MESSAGES | ChatPermissions::SEND_FILES,
             created_at: Utc::now(),
             members: vec![member],
@@ -195,7 +203,7 @@ mod tests {
             name: None,
             image: None,
             chat_type: ChatType::GroupDm,
-            last_message_id: None,
+            last_message: None,
             permissions: ChatPermissions::SEND_MESSAGES,
             created_at: Utc::now(),
             members: vec![],
@@ -217,7 +225,7 @@ mod tests {
             name: None,
             image: None,
             chat_type: ChatType::GroupDm,
-            last_message_id: None,
+            last_message: None,
             permissions: ChatPermissions::SEND_MESSAGES,
             created_at: Utc::now(),
             members: vec![member],

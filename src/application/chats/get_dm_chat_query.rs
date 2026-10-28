@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     application::RequestHandler, domain::{
-        auth::data::user_repository::UserRepository, chats::{Chat, ChatInfo, ChatMember, data::ChatRepository},
+        auth::data::user_repository::UserRepository, chats::{Chat, ChatMember, data::ChatRepository},
     }, error::Error, infra::IdGenerator, state::AppState,
 };
 
@@ -30,13 +30,13 @@ impl GetDMChatCommandHandler {
 
 impl RequestHandler for GetDMChatCommandHandler {
     type Request = GetDMChatCommand;
-    type Output = ChatInfo;
+    type Output = Chat;
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
         let existing_dm = self
             .chat_repository
-            .get_dm_chat_info(request.current_user_id, request.user_id)
+            .get_dm_chat(request.current_user_id, request.user_id)
             .await
             .map_err(Error::InternalServerError)?;
 
@@ -76,7 +76,7 @@ impl RequestHandler for GetDMChatCommandHandler {
             .map_err(Error::InternalServerError)?;
 
         self.chat_repository
-            .get_dm_chat_info(request.current_user_id, request.user_id)
+            .get_dm_chat(request.current_user_id, request.user_id)
             .await
             .map_err(Error::InternalServerError)?
             .ok_or(Error::InternalServerError(anyhow::anyhow!("Chat expected to be found")))

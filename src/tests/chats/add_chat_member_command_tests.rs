@@ -8,7 +8,7 @@ use crate::{
     },
     assert_err,
     domain::{
-        chats::{Chat, ChatMemberInfo, ChatPermissions, CreateGroupChatRequest},
+        chats::{Chat, ChatMember, ChatPermissions, CreateGroupChatRequest},
         events::DomainEvent,
     },
     error::Error,

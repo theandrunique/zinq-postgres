@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::domain::chats::{Chat, ChatInfo, ChatMember};
+use crate::domain::chats::{Chat, ChatMember};
 
 #[async_trait]
 pub trait ChatRepository: Send + Sync {
@@ -25,11 +25,11 @@ pub trait ChatRepository: Send + Sync {
         message_id: i64,
     ) -> Result<(), anyhow::Error>;
 
-    async fn get_dm_chat_info(
+    async fn get_dm_chat(
         &self,
         user_id1: i64,
         user_id2: i64,
-    ) -> Result<Option<ChatInfo>, anyhow::Error>;
-    async fn get_info_by_id(&self, chat_id: i64) -> Result<Option<ChatInfo>, anyhow::Error>;
-    async fn get_user_chat_infos(&self, user_id: i64) -> Result<Vec<ChatInfo>, anyhow::Error>;
+    ) -> Result<Option<Chat>, anyhow::Error>;
+
+    async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error>;
 }

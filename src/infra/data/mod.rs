@@ -9,10 +9,10 @@ pub mod message_repository;
 pub mod user_repository;
 pub mod user_session_repository;
 
-pub async fn create_pool() -> Result<Pool<Postgres>, sqlx::Error> {
+pub async fn create_pool(url: &str) -> Result<Pool<Postgres>, sqlx::Error> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect("postgres://postgres:password@localhost/test")
+        .connect(url)
         .await?;
 
     Ok(pool)

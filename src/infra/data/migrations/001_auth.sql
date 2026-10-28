@@ -29,4 +29,4 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     created_at timestamptz NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id, token_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON user_sessions(user_id, token_id);

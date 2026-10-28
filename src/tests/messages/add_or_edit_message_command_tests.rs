@@ -327,7 +327,7 @@ async fn test_add_message_saved_in_repository() {
     let stored_message = ctx
         .app_state
         .message_repository
-        .get_by_id(chat.id, result.message.id)
+        .get_by_id(result.message.id)
         .await
         .unwrap_or_else(|e| panic!("Failed to get message: {:?}", e))
         .expect("Message should exist in repository");
@@ -531,7 +531,7 @@ async fn test_add_message_updates_last_message_id() {
         .expect("Chat should exist");
 
     assert_eq!(
-        updated_chat.last_message_id,
+        updated_chat.last_message.map(|v| v.message_id),
         Some(result.message.id),
         "last_message_id should be updated to the new message id"
     );

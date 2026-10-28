@@ -194,7 +194,7 @@ impl RequestHandler for AddOrEditMessageCommandHandler {
                 .await
                 .map_err(Error::InternalServerError)?;
 
-            if chat.last_message_id.is_none() && chat.chat_type == ChatType::Dm {
+            if chat.last_message.is_none() && chat.chat_type == ChatType::Dm {
                 self.mediator
                     .publish(&DomainEvent::ChatCreate { chat: chat.clone() })
                     .await?;
