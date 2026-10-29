@@ -5,6 +5,7 @@ mod ping_router;
 mod schemas;
 mod user_router;
 mod well_known_router;
+mod event_publisher;
 
 pub use auth_router::auth_router;
 pub use chat_router::chat_router;
