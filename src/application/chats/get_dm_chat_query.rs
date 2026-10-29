@@ -80,12 +80,6 @@ impl RequestHandler for GetDMChatCommandHandler {
             .await
             .map_err(Error::InternalServerError)?;
 
-        self.chat_repository
-            .get_dm_chat(request.current_user_id, request.user_id)
-            .await
-            .map_err(Error::InternalServerError)?
-            .ok_or(Error::InternalServerError(anyhow::anyhow!(
-                "Chat expected to be found"
-            )))
+        Ok(chat)
     }
 }
