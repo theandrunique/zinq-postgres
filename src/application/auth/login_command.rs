@@ -24,7 +24,7 @@ pub struct LoginCommand {
 
 pub struct LoginCommandResult {
     pub access_token: String,
-    pub expires_in: u64,
+    pub expires_in: i64,
     pub refresh_token: String,
 }
 

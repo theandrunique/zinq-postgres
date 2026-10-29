@@ -12,12 +12,10 @@ struct AttachmentDb {
     id: i64,
     message_id: i64,
     chat_id: i64,
-
     storage_key: String,
     size: i64,
     filename: String,
     content_type: String,
-
     duration_secs: Option<f32>,
     is_spoiler: bool,
     placeholder: Option<String>,
@@ -31,7 +29,6 @@ impl From<AttachmentDb> for Attachment {
             id: value.id,
             message_id: value.message_id,
             chat_id: value.chat_id,
-
             content_type: value.content_type,
             duration_secs: value.duration_secs,
             filename: value.filename,

@@ -13,7 +13,7 @@ pub struct SmtpConfig {
 
 #[derive(Clone)]
 pub struct AuthConfig {
-    pub access_token_expiration_seconds: u64,
+    pub access_token_expiration_seconds: i64,
     pub keys_directory: String,
 }
 
@@ -30,11 +30,10 @@ pub struct S3Config {
 #[derive(Clone)]
 pub struct Config {
     pub port: u16,
-    pub scylla_node: String,
+    pub postgres_url: String,
     pub smtp: SmtpConfig,
     pub auth: AuthConfig,
     pub s3: S3Config,
-    pub nats_url: String,
 }
 
 pub static CONFIG: OnceCell<Config> = OnceCell::new();
@@ -47,7 +46,7 @@ fn init_config() -> Config {
             .unwrap_or("3000".to_string())
             .parse()
             .expect("Failed to parse port"),
-        scylla_node: env::var("SCYLLA_NODE").unwrap_or("127.0.0.1:9042".to_string()),
+        postgres_url: env::var("POSTGRES_URL").expect("POSTGRES_URL is required"),
         smtp: SmtpConfig {
             host: env::var("SMTP_HOST").unwrap_or("smtp.example.com".to_string()),
             port: env::var("SMTP_PORT")
@@ -65,7 +64,6 @@ fn init_config() -> Config {
                 .expect("Failed to parse access token expiration"),
             keys_directory: env::var("KEYS_DIRECTORY").unwrap_or("keys".to_string()),
         },
-        nats_url: env::var("NATS_URL").unwrap_or("nats://127.0.0.1:4222".to_string()),
         s3: S3Config {
             access_key: env::var("AWS_ACCESS_KEY_ID").expect("AWS_ACCESS_KEY_ID required"),
             secret_key: env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY required"),

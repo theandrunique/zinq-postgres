@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use async_trait::async_trait;
-use sqlx::{Pool, Postgres};
 use sqlx::prelude::FromRow;
+use sqlx::{Pool, Postgres};
 
 use crate::domain::chats::data::ChatMemberRepository;
 
@@ -15,7 +15,7 @@ struct ChatMemberStatus {
 }
 
 pub struct PostgresChatMemberRepository {
-    pool: Pool<Postgres>
+    pool: Pool<Postgres>,
 }
 
 impl PostgresChatMemberRepository {
@@ -35,18 +35,20 @@ impl ChatMemberRepository for PostgresChatMemberRepository {
             return Ok(HashMap::new());
         }
 
-        let rows = sqlx::query_as::<_, (i64, bool)>("
+        let rows = sqlx::query_as::<_, (i64, bool)>(
+            "
             SELECT chat_id, is_leave
             FROM chat_members
             WHERE user_id = $1 AND chat_id = ANY($2)
-            ")
-            .bind(user_id)
-            .bind(chat_ids)
-            .fetch_all(&self.pool)
-            .await
-            .context("Failed to fetch chat members")?
-            .into_iter()
-            .collect::<Vec<_>>();
+            ",
+        )
+        .bind(user_id)
+        .bind(chat_ids)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat members")?
+        .into_iter()
+        .collect::<Vec<_>>();
 
         let mut result = HashMap::new();
         for row in rows {

@@ -6,11 +6,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: zinq
+      POSTGRES_DB: zinq_db
     volumes:
       - data_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d zinq"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zinq_db"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -53,20 +53,31 @@ services:
     entrypoint: /bin/sh
     command:
       - -c
-      - "aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket zinq >/dev/null 2>&1 || aws --endpoint-url http://rustfs:9000 s3 mb s3://zinq"
-    restart: "no"
+      - |
+        # creating a bucket if it doesn't esists
+        aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket zinq-data >/dev/null 2>&1 || \
+        aws --endpoint-url http://rustfs:9000 s3 mb s3://zinq-data
 
-  nats:
-    image: nats:latest
-    ports:
-      - "8222:8222"
-      - "4222:4222"
-    command: "-js -sd /data"
-    volumes:
-      - nats_data:/data
+        aws --endpoint-url http://rustfs:9000 s3api put-public-access-block \
+          --bucket zinq-data \
+          --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false" || true
+
+        aws --endpoint-url http://rustfs:9000 s3api put-bucket-policy \
+          --bucket zinq-data \
+          --policy '{
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::zinq-data/*"
+              }
+            ]
+          }' || true
+    restart: "no"
 
 volumes:
   data_postgres:
   data_rustfs:
   logs_rustfs:
-  nats_data:

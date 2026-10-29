@@ -37,10 +37,10 @@ impl ChatLoader for PostgresChatLoader {
                     permissions, created_at
              FROM chats WHERE id = $1",
         )
-            .bind(chat_id)
-            .fetch_optional(&self.pool)
-            .await
-            .context("Failed to fetch chat by id")?;
+        .bind(chat_id)
+        .fetch_optional(&self.pool)
+        .await
+        .context("Failed to fetch chat by id")?;
 
         let chat_db = match chat_db {
             Some(c) => c,

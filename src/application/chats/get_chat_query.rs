@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler, domain::chats::{Chat, data::ChatRepository}, error::Error, state::AppState,
+    application::RequestHandler,
+    domain::chats::{Chat, data::ChatRepository},
+    error::Error,
+    state::AppState,
 };
 
 #[derive(Debug, Clone)]

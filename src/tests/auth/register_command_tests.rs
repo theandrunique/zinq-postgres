@@ -7,7 +7,7 @@ fn valid_command() -> RegisterCommand {
     RegisterCommand {
         username: "testuser".to_string(),
         password: "Test123!".to_string(),
-        global_name: "Test User".to_string(),
+        display_name: "Test User".to_string(),
         email: "test@example.com".to_string(),
     }
 }

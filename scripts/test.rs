@@ -3,9 +3,7 @@ use std::process::{Command, ExitCode};
 use testcontainers::{GenericImage, ImageExt, core::WaitFor, runners::AsyncRunner};
 use testcontainers_modules::postgres::Postgres;
 
-/// RustFS image tag (S3-compatible storage used by the tests).
 const RUSTFS_TAG: &str = "1.0.4";
-/// RustFS root credentials. `rustfsadmin` is the built-in default.
 const S3_ACCESS_KEY: &str = "rustfsadmin";
 const S3_SECRET_KEY: &str = "rustfsadmin";
 const S3_BUCKET: &str = "test-bucket";
@@ -40,8 +38,8 @@ async fn main() -> ExitCode {
         }
     };
 
-    let pg_host = postgres.get_host().await.unwrap().to_string();
-    let pg_port = postgres.get_host_port_ipv4(5432).await.unwrap().to_string();
+    let postgres_host = postgres.get_host().await.unwrap().to_string();
+    let postgres_port = postgres.get_host_port_ipv4(5432).await.unwrap().to_string();
 
     let s3_host = s3.get_host().await.unwrap().to_string();
     let s3_port = s3.get_host_port_ipv4(9000).await.unwrap();
@@ -49,8 +47,8 @@ async fn main() -> ExitCode {
 
     let status = Command::new("cargo")
         .arg("test")
-        .env("TEST_POSGRES_HOST", pg_host)
-        .env("TEST_POSGRES_PORT", pg_port)
+        .env("TEST_POSGRES_HOST", postgres_host)
+        .env("TEST_POSGRES_PORT", postgres_port)
         .env("TEST_S3_ENDPOINT", s3_url)
         .env("TEST_S3_ACCESS_KEY", S3_ACCESS_KEY)
         .env("TEST_S3_SECRET_KEY", S3_SECRET_KEY)

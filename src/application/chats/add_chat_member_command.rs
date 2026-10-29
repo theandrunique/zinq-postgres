@@ -1,11 +1,18 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler, core::ValidateExt, domain::{
-        auth::data::user_repository::UserRepository, chats::{
-            Chat, ChatMember, ChatPermissions, ChatType, data::{ChatLoadOptions, ChatLoader, ChatRepository},
-        }, events::{DomainEvent, Mediator},
-    }, error::Error, state::AppState,
+    application::RequestHandler,
+    core::ValidateExt,
+    domain::{
+        auth::data::user_repository::UserRepository,
+        chats::{
+            Chat, ChatMember, ChatPermissions, ChatType,
+            data::{ChatLoadOptions, ChatLoader, ChatRepository},
+        },
+        events::{DomainEvent, Mediator},
+    },
+    error::Error,
+    state::AppState,
 };
 
 #[derive(Debug, validator::Validate, Clone)]

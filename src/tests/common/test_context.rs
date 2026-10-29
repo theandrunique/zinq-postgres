@@ -16,18 +16,37 @@ use crate::{
             ChatCreateMetaMessage, ChatMemberAddedMetaMessage, ChatMemberRemovedMetaMessage,
         },
         services::{AttachmentService, AvatarService, ChannelImageService},
-    }, config::S3Config, domain::{
+    },
+    config::S3Config,
+    domain::{
         auth::User,
         chats::{Chat, ChatPermissions, data::ChatLoader},
         events::Mediator,
         messages::{CreateMessageRequest, Message},
-    }, infra::{
+    },
+    infra::{
+        S3Service,
         auth::{
             hash_handler::BcryptHandler, jwks_service::FileJwksService, jwt_handler::JwtService,
             totp_handler::TotpService,
-        }, data::{attachment_repository::PostgresAttachmentRepository, chat_loader::PostgresChatLoader, chat_member_repository::PostgresChatMemberRepository, chat_repotisory::PostgresChatRepository, create_pool, message_ack_repository::PostgresMessageAckRepository, message_repository::PostgresMessageRepository, run_migrations, user_repository::PostgresUserRepository, user_session_repository::PostgresUserSessionRepository}, id_generator::SnowflakeIdGenerator, s3::AwsS3Service, smtp_client::SmtpService,
-    }, state::AppState, tests::common::test_config::{
-        POSTGRES_HOST_ENV, POSTGRES_PORT_ENV, S3_ACCESS_KEY_ENV, S3_BUCKET_ENV, S3_ENDPOINT_ENV, S3_REGION_ENV, S3_SECRET_KEY_ENV,
+        },
+        data::{
+            attachment_repository::PostgresAttachmentRepository, chat_loader::PostgresChatLoader,
+            chat_member_repository::PostgresChatMemberRepository,
+            chat_repotisory::PostgresChatRepository, create_pool,
+            message_ack_repository::PostgresMessageAckRepository,
+            message_repository::PostgresMessageRepository, run_migrations,
+            user_repository::PostgresUserRepository,
+            user_session_repository::PostgresUserSessionRepository,
+        },
+        id_generator::SnowflakeIdGenerator,
+        s3::AwsS3Service,
+        smtp_client::SmtpService,
+    },
+    state::AppState,
+    tests::common::test_config::{
+        POSTGRES_HOST_ENV, POSTGRES_PORT_ENV, S3_ACCESS_KEY_ENV, S3_BUCKET_ENV, S3_ENDPOINT_ENV,
+        S3_REGION_ENV, S3_SECRET_KEY_ENV,
     },
 };
 
@@ -40,18 +59,22 @@ impl TestContext {
         let pg_host = std::env::var(POSTGRES_HOST_ENV).expect("TEST_POSGRES_HOST not set");
         let pg_port = std::env::var(POSTGRES_PORT_ENV).expect("TEST_POSGRES_PORT not set");
 
-
-        let master_url = format!("postgres://postgres:postgres@{}:{}/postgres", pg_host, pg_port);
+        let master_url = format!(
+            "postgres://postgres:postgres@{}:{}/postgres",
+            pg_host, pg_port
+        );
         let master_pool = create_pool(&master_url).await.unwrap();
         Self::setup_database(master_pool.clone(), database).await;
         master_pool.close().await;
 
-        let pg_url = format!("postgres://postgres:postgres@{}:{}/{}", pg_host, pg_port, database);
+        let pg_url = format!(
+            "postgres://postgres:postgres@{}:{}/{}",
+            pg_host, pg_port, database
+        );
         let pool = create_pool(&pg_url).await.unwrap();
         run_migrations(&pool).await.unwrap();
 
         let jwks_service = FileJwksService::load_from_directory("keys").unwrap();
-        let jwks_service_clone = FileJwksService::load_from_directory("keys").unwrap();
 
         let s3_endpoint = std::env::var(S3_ENDPOINT_ENV).expect("TEST_S3_ENDPOINT not set");
         let s3_access_key = std::env::var(S3_ACCESS_KEY_ENV).expect("TEST_S3_ACCESS_KEY not set");
@@ -68,9 +91,7 @@ impl TestContext {
             region: s3_region,
         };
 
-        let s3_service: Arc<dyn crate::infra::s3::S3Service> =
-            Arc::new(AwsS3Service::new(&s3_config).await);
-
+        let s3_service: Arc<dyn S3Service> = Arc::new(AwsS3Service::new(&s3_config).await);
         let _ = s3_service.create_bucket(&s3_config.bucket_name).await;
 
         let id_gen = Arc::new(SnowflakeIdGenerator::new());
@@ -97,8 +118,8 @@ impl TestContext {
             attachment_repository: Arc::new(PostgresAttachmentRepository::new(pool.clone())),
             message_ack_repository: Arc::new(PostgresMessageAckRepository::new(pool.clone())),
             hash_handler: Arc::new(BcryptHandler::new()),
-            jwks_service: Arc::new(jwks_service),
-            jwt_handler: Arc::new(JwtService::new(jwks_service_clone, 3600)),
+            jwks_service: Arc::new(jwks_service.clone()),
+            jwt_handler: Arc::new(JwtService::new(jwks_service, 3600)),
             smtp_client: Arc::new(SmtpService::new(
                 "test@test.com".to_string(),
                 "smtp.test.com".to_string(),
@@ -144,7 +165,7 @@ impl TestContext {
         let cmd = RegisterCommand {
             username: username.to_string(),
             password: "Test123!".to_string(),
-            global_name: username.to_string(),
+            display_name: username.to_string(),
             email: email.to_string(),
         };
 

@@ -11,7 +11,6 @@ pub struct UserPrivateSchema {
     pub bio: Option<String>,
     pub avatar: Option<String>,
     pub created_at: DateTime<Utc>,
-
     pub sessions_ttl: SessionLifetime,
     pub email: String,
     pub email_verified: bool,

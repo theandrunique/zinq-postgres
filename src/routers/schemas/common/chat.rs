@@ -1,7 +1,10 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::domain::chats::{Chat, ChatMember, ChatType, LastMessageInfo};
+use crate::domain::{
+    chats::{Chat, ChatMember, ChatType, LastMessageInfo},
+    messages::MessageType,
+};
 
 #[derive(Serialize)]
 pub struct ChatMemberSchema {
@@ -25,6 +28,29 @@ impl From<ChatMember> for ChatMemberSchema {
 }
 
 #[derive(Serialize)]
+pub struct LastMessageInfoSchema {
+    pub message_id: String,
+    pub author_id: String,
+    pub content: String,
+    pub message_type: MessageType,
+    pub edited_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<LastMessageInfo> for LastMessageInfoSchema {
+    fn from(value: LastMessageInfo) -> Self {
+        Self {
+            message_id: value.message_id.to_string(),
+            author_id: value.author_id.to_string(),
+            content: value.content,
+            message_type: value.message_type,
+            edited_at: value.edited_at,
+            created_at: value.created_at,
+        }
+    }
+}
+
+#[derive(Serialize)]
 pub struct ChatSchema {
     pub id: String,
     pub owner_id: Option<String>,
@@ -36,8 +62,7 @@ pub struct ChatSchema {
     pub permissions: String,
     pub created_at: DateTime<Utc>,
     pub members: Vec<ChatMemberSchema>,
-    pub last_message: Option<LastMessageInfo>,
-
+    pub last_message: Option<LastMessageInfoSchema>,
     pub last_read_message_id: Option<String>,
     pub max_read_message_id: Option<String>,
 }
@@ -68,7 +93,7 @@ impl ChatSchema {
             description: Some("".to_string()),
             image: chat.image,
             chat_type: chat.chat_type,
-            last_message: chat.last_message,
+            last_message: chat.last_message.map(|v| v.into()),
             permissions: chat.permissions.to_string(),
             created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
@@ -87,7 +112,7 @@ impl From<Chat> for ChatSchema {
             description: Some("".to_string()),
             image: chat.image,
             chat_type: chat.chat_type,
-            last_message: chat.last_message,
+            last_message: chat.last_message.map(|v| v.into()),
             permissions: chat.permissions.to_string(),
             created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),

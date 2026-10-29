@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use anyhow::Context;
+
 use crate::{
     application::{
         meta_messages::{
@@ -30,7 +32,8 @@ use crate::{
             chat_member_repository::PostgresChatMemberRepository,
             chat_repotisory::PostgresChatRepository, create_pool,
             message_ack_repository::PostgresMessageAckRepository,
-            message_repository::PostgresMessageRepository, user_repository::PostgresUserRepository,
+            message_repository::PostgresMessageRepository, run_migrations,
+            user_repository::PostgresUserRepository,
             user_session_repository::PostgresUserSessionRepository,
         },
         id_generator::{IdGenerator, SnowflakeIdGenerator},
@@ -97,7 +100,12 @@ pub async fn init_state() -> AppState {
     let channel_image_service =
         Arc::new(ChannelImageService::new(s3_service.clone(), &app_config.s3));
 
-    let pool = create_pool("postgres://postgres:password@localhost/test").await.unwrap();
+    let pool = create_pool(&app_config.postgres_url)
+        .await
+        .expect("Failed to create database pool");
+    run_migrations(&pool)
+        .await
+        .expect("Failed to run migrations");
 
     let mut app_state = AppState {
         id_gen: id_gen.clone(),
@@ -113,7 +121,7 @@ pub async fn init_state() -> AppState {
         jwks_service: Arc::new(jwks_service.clone()),
         jwt_handler: Arc::new(JwtService::new(
             jwks_service,
-            app_config.auth.access_token_expiration_seconds as i64,
+            app_config.auth.access_token_expiration_seconds,
         )),
         smtp_client: Arc::new(SmtpService::new(
             app_config.smtp.from.clone(),

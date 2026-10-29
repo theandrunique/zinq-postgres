@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use crate::domain::{
-    auth::User, chats::{
-        chat_member::ChatMember, chat_permissions::ChatPermissions,
-    }, messages::MessageType,
+    auth::User,
+    chats::{chat_member::ChatMember, chat_permissions::ChatPermissions},
+    messages::MessageType,
 };
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};

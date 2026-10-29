@@ -15,7 +15,7 @@ use crate::{
 pub struct RegisterRequestSchema {
     pub username: String,
     pub email: String,
-    pub global_name: String,
+    pub display_name: String,
     pub password: String,
 }
 
@@ -29,7 +29,7 @@ pub async fn register(
     let command = RegisterCommand {
         username: payload.username,
         email: payload.email,
-        global_name: payload.global_name,
+        display_name: payload.display_name,
         password: payload.password,
     };
 
