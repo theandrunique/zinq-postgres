@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use socketioxide::SocketIo;
 
 use crate::{
     application::{
@@ -40,6 +41,7 @@ use crate::{
         s3::{AwsS3Service, S3Service},
         smtp_client::{SmtpClient, SmtpService},
     },
+    routers::EventPublisher,
 };
 
 #[derive(Clone)]
@@ -66,7 +68,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn register_handlers(&mut self) {
+    pub async fn register_handlers(&mut self, io: SocketIo) {
         self.mediator
             .register(ChatCreateMetaMessage::new(self))
             .await;
@@ -75,6 +77,9 @@ impl AppState {
             .await;
         self.mediator
             .register(ChatMemberRemovedMetaMessage::new(self))
+            .await;
+        self.mediator
+            .register(EventPublisher::new(io, self.chat_repository.clone()))
             .await;
     }
 }
@@ -137,8 +142,6 @@ pub async fn init_state() -> AppState {
         channel_image_service,
         mediator: Arc::new(Mediator::new()),
     };
-
-    app_state.register_handlers().await;
 
     app_state
 }

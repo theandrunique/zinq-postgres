@@ -38,6 +38,10 @@ pub enum DomainEvent {
         attachments: Vec<Attachment>,
         initiator_id: i64,
     },
+    MessageDelete {
+        chat_id: i64,
+        message_id: i64,
+    },
     MessageAck {
         user_id: i64,
         chat_id: i64,

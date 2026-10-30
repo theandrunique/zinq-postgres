@@ -6,4 +6,3 @@ pub mod events;
 pub mod message_acks;
 pub mod messages;
 pub mod reactions;
-pub mod gateway;

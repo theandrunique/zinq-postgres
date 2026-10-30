@@ -35,11 +35,9 @@ async fn main() {
 
     tracing::info!("Initializing server");
 
-    let app_config = config::config();
-
-    let app_state = init_state().await;
-
-    let (socket_layer, _io) = gateway(app_state.clone());
+    let mut app_state = init_state().await;
+    let (socket_layer, io) = gateway(app_state.clone());
+    app_state.register_handlers(io).await;
 
     let app = Router::new()
         .nest("/.well-known", well_known_router(app_state.clone()))
@@ -50,6 +48,7 @@ async fn main() {
         .nest("/ping", ping_router())
         .layer(socket_layer);
 
+    let app_config = config::config();
     let address = format!("0.0.0.0:{}", app_config.port);
     let socket_addr: SocketAddr = address.parse().expect("Unable to parse socket address");
 
