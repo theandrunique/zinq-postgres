@@ -1,67 +1,59 @@
 use std::process::{Command, ExitCode};
 
-use testcontainers::{ImageExt, runners::AsyncRunner};
-use testcontainers_modules::minio::MinIO;
-use testcontainers_modules::nats::{Nats, NatsServerCmd};
-use testcontainers_modules::scylladb::ScyllaDB;
+use testcontainers::{GenericImage, ImageExt, core::WaitFor, runners::AsyncRunner};
+use testcontainers_modules::postgres::Postgres;
+
+const RUSTFS_TAG: &str = "1.0.4";
+const S3_ACCESS_KEY: &str = "rustfsadmin";
+const S3_SECRET_KEY: &str = "rustfsadmin";
+const S3_BUCKET: &str = "test-bucket";
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    let scylla = match ScyllaDB::default().with_tag("6.2.3").start().await {
+    let postgres = match Postgres::default().with_tag("16-alpine").start().await {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to start ScyllaDB: {}", e);
+            eprintln!("Failed to start PostgreSQL: {}", e);
             return ExitCode::FAILURE;
         }
     };
 
-    let minio = match MinIO::default()
-        .with_env_var("MINIO_DEFAULT_BUCKETS", "test-bucket")
+    let s3 = match GenericImage::new("rustfs/rustfs", RUSTFS_TAG)
+        .with_env_var("RUSTFS_ACCESS_KEY", S3_ACCESS_KEY)
+        .with_env_var("RUSTFS_SECRET_KEY", S3_SECRET_KEY)
+        // By default RustFS writes logs into /logs, so testcontainers never sees
+        // them. An empty directory makes the entrypoint log to stdout instead.
+        .with_env_var("RUSTFS_OBS_LOG_DIRECTORY", "")
+        .with_env_var("RUSTFS_OBS_LOGGER_LEVEL", "info")
+        .with_ready_conditions(vec![WaitFor::message_on_stdout(
+            "RustFS Service is running",
+        )])
         .start()
         .await
     {
         Ok(m) => m,
         Err(e) => {
-            eprintln!("Failed to start MinIO: {}", e);
+            eprintln!("Failed to start RustFS: {}", e);
             return ExitCode::FAILURE;
         }
     };
 
-    let scylla_host = scylla.get_host().await.unwrap().to_string();
-    let scylla_port = scylla.get_host_port_ipv4(9042).await.unwrap().to_string();
+    let postgres_host = postgres.get_host().await.unwrap().to_string();
+    let postgres_port = postgres.get_host_port_ipv4(5432).await.unwrap().to_string();
 
-    let minio_host = minio.get_host().await.unwrap().to_string();
-    let minio_port = minio.get_host_port_ipv4(9000).await.unwrap();
-
-    let minio_url = format!("http://{}:{}", minio_host, minio_port);
-
-    let nats = match Nats::default()
-        .with_cmd(&NatsServerCmd::default().with_jetstream())
-        .start()
-        .await
-    {
-        Ok(n) => n,
-        Err(e) => {
-            eprintln!("Failed to start NATS: {}", e);
-            return ExitCode::FAILURE;
-        }
-    };
-
-    let nats_host = nats.get_host().await.unwrap().to_string();
-    let nats_port = nats.get_host_port_ipv4(4222).await.unwrap();
-
-    let nats_url = format!("nats://{}:{}", nats_host, nats_port);
+    let s3_host = s3.get_host().await.unwrap().to_string();
+    let s3_port = s3.get_host_port_ipv4(9000).await.unwrap();
+    let s3_url = format!("http://{}:{}", s3_host, s3_port);
 
     let status = Command::new("cargo")
         .arg("test")
-        .env("TEST_SCYLLA_HOST", scylla_host)
-        .env("TEST_SCYLLA_PORT", &scylla_port)
-        .env("TEST_S3_ENDPOINT", minio_url)
-        .env("TEST_S3_ACCESS_KEY", "minioadmin")
-        .env("TEST_S3_SECRET_KEY", "minioadmin")
-        .env("TEST_S3_BUCKET", "test-bucket")
+        .env("TEST_POSGRES_HOST", postgres_host)
+        .env("TEST_POSGRES_PORT", postgres_port)
+        .env("TEST_S3_ENDPOINT", s3_url)
+        .env("TEST_S3_ACCESS_KEY", S3_ACCESS_KEY)
+        .env("TEST_S3_SECRET_KEY", S3_SECRET_KEY)
+        .env("TEST_S3_BUCKET", S3_BUCKET)
         .env("TEST_S3_REGION", "us-east-1")
-        .env("TEST_NATS_URL", nats_url)
         .spawn()
         .expect("Failed to start cargo test")
         .wait()

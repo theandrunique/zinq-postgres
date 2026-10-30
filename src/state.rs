@@ -1,25 +1,27 @@
 use std::sync::Arc;
 
-use scylla::client::session_builder::SessionBuilder;
+use anyhow::Context;
+use socketioxide::SocketIo;
 
 use crate::{
     application::{
-        events::EventPublisher,
         meta_messages::{
             ChatCreateMetaMessage, ChatMemberAddedMetaMessage, ChatMemberRemovedMetaMessage,
         },
         services::{AttachmentService, AvatarService, ChannelImageService},
-    }, config::{self, Config}, domain::{
+    },
+    config::{self, Config},
+    domain::{
         attachments::data::AttachmentRepository,
         auth::data::{
             user_repository::UserRepository, user_session_repository::UserSessionRepository,
         },
         chats::data::{ChatLoader, ChatMemberRepository, ChatRepository},
-        event_log::data::EventLogRepository,
         events::Mediator,
         message_acks::data::MessageAckRepository,
         messages::data::MessageRepository,
-    }, infra::{
+    },
+    infra::{
         auth::{
             hash_handler::{BcryptHandler, HashHandler},
             jwks_service::FileJwksService,
@@ -27,24 +29,23 @@ use crate::{
             totp_handler::{TotpHandler, TotpService},
         },
         data::{
-            attachment_repository::ScyllaAttachmentRepository, chat_loader::ScyllaChatLoader,
-            chat_member_repository::ScyllaChatMemberRepository,
-            chat_repotisory::ScyllaChatRepository, event_log_repository::ScyllaEventLogRepository,
-            message_ack_repository::ScyllaMessageAckRepository,
-            message_repository::ScyllaMessageRepository, user_repository::ScyllaUserRepository,
-            user_session_repository::ScyllaUserSessionRepository,
+            attachment_repository::PostgresAttachmentRepository, chat_loader::PostgresChatLoader,
+            chat_member_repository::PostgresChatMemberRepository,
+            chat_repotisory::PostgresChatRepository, create_pool,
+            message_ack_repository::PostgresMessageAckRepository,
+            message_repository::PostgresMessageRepository, run_migrations,
+            user_repository::PostgresUserRepository,
+            user_session_repository::PostgresUserSessionRepository,
         },
-        event_bus::{EventBus, NatsEventBus},
         id_generator::{IdGenerator, SnowflakeIdGenerator},
         s3::{AwsS3Service, S3Service},
         smtp_client::{SmtpClient, SmtpService},
     },
+    routers::EventPublisher,
 };
 
 #[derive(Clone)]
 pub struct AppState {
-    pub event_bus: Arc<dyn EventBus>,
-    pub event_log_repository: Arc<dyn EventLogRepository>,
     pub id_gen: Arc<dyn IdGenerator>,
     pub user_repository: Arc<dyn UserRepository>,
     pub user_session_repository: Arc<dyn UserSessionRepository>,
@@ -67,7 +68,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn register_handlers(&mut self) {
+    pub async fn register_handlers(&mut self, io: SocketIo) {
         self.mediator
             .register(ChatCreateMetaMessage::new(self))
             .await;
@@ -77,25 +78,14 @@ impl AppState {
         self.mediator
             .register(ChatMemberRemovedMetaMessage::new(self))
             .await;
-        self.mediator.register(EventPublisher::new(self)).await;
+        self.mediator
+            .register(EventPublisher::new(io, self.chat_repository.clone()))
+            .await;
     }
 }
 
 pub async fn init_state() -> AppState {
     let app_config = config::config();
-
-    let session = Arc::new(
-        SessionBuilder::new()
-            .known_node(&app_config.scylla_node)
-            .build()
-            .await
-            .expect("Error creating scylla session"),
-    );
-
-    session
-        .use_keyspace("zinq", true)
-        .await
-        .expect("Failed to use keyspace");
 
     let jwks_service = FileJwksService::load_from_directory(&app_config.auth.keys_directory)
         .expect("Failed to init JwksService");
@@ -115,26 +105,28 @@ pub async fn init_state() -> AppState {
     let channel_image_service =
         Arc::new(ChannelImageService::new(s3_service.clone(), &app_config.s3));
 
-    let client = async_nats::connect(&app_config.nats_url).await.unwrap();
-    let jetstream = async_nats::jetstream::new(client);
+    let pool = create_pool(&app_config.postgres_url)
+        .await
+        .expect("Failed to create database pool");
+    run_migrations(&pool)
+        .await
+        .expect("Failed to run migrations");
 
     let mut app_state = AppState {
-        event_bus: Arc::new(NatsEventBus::new(jetstream)),
-        event_log_repository: Arc::new(ScyllaEventLogRepository::new(session.clone())),
         id_gen: id_gen.clone(),
-        user_repository: Arc::new(ScyllaUserRepository::new(session.clone())),
-        user_session_repository: Arc::new(ScyllaUserSessionRepository::new(session.clone())),
-        chat_loader: Arc::new(ScyllaChatLoader::new(session.clone())),
-        chat_member_repository: Arc::new(ScyllaChatMemberRepository::new(session.clone())),
-        chat_repository: Arc::new(ScyllaChatRepository::new(session.clone())),
-        message_repository: Arc::new(ScyllaMessageRepository::new(session.clone())),
-        attachment_repository: Arc::new(ScyllaAttachmentRepository::new(session.clone())),
-        message_ack_repository: Arc::new(ScyllaMessageAckRepository::new(session.clone())),
+        user_repository: Arc::new(PostgresUserRepository::new(pool.clone())),
+        user_session_repository: Arc::new(PostgresUserSessionRepository::new(pool.clone())),
+        chat_loader: Arc::new(PostgresChatLoader::new(pool.clone())),
+        chat_member_repository: Arc::new(PostgresChatMemberRepository::new(pool.clone())),
+        chat_repository: Arc::new(PostgresChatRepository::new(pool.clone())),
+        message_repository: Arc::new(PostgresMessageRepository::new(pool.clone())),
+        attachment_repository: Arc::new(PostgresAttachmentRepository::new(pool.clone())),
+        message_ack_repository: Arc::new(PostgresMessageAckRepository::new(pool.clone())),
         hash_handler: Arc::new(BcryptHandler::new()),
         jwks_service: Arc::new(jwks_service.clone()),
         jwt_handler: Arc::new(JwtService::new(
             jwks_service,
-            app_config.auth.access_token_expiration_seconds as i64,
+            app_config.auth.access_token_expiration_seconds,
         )),
         smtp_client: Arc::new(SmtpService::new(
             app_config.smtp.from.clone(),
@@ -150,8 +142,6 @@ pub async fn init_state() -> AppState {
         channel_image_service,
         mediator: Arc::new(Mediator::new()),
     };
-
-    app_state.register_handlers().await;
 
     app_state
 }

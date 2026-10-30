@@ -41,7 +41,7 @@ impl RequestHandler for GetDMChatCommandHandler {
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
         let existing_dm = self
             .chat_repository
-            .get_dm_channel(request.current_user_id, request.user_id)
+            .get_dm_chat(request.current_user_id, request.user_id)
             .await
             .map_err(Error::InternalServerError)?;
 

@@ -30,7 +30,7 @@ pub async fn create_chat(
     State(state): State<AppState>,
     AuthUser { claims }: AuthUser,
     Json(payload): Json<CreateChatRequestSchema>,
-) -> Result<Json<ChatSchema>, Error> {
+) -> Result<Json<()>, Error> {
     let handler = CreateChatCommandHandler::new(&state);
 
     let command = CreateChatCommand {
@@ -40,7 +40,7 @@ pub async fn create_chat(
         permissions: None,
     };
 
-    let result = handler.handle(command).await?;
+    handler.handle(command).await?;
 
-    Ok(Json(ChatSchema::from(result)))
+    Ok(Json(()))
 }

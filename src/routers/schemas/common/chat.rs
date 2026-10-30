@@ -1,13 +1,16 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::domain::chats::{Chat, ChatMember, ChatType};
+use crate::domain::{
+    chats::{Chat, ChatMember, ChatType, LastMessageInfo},
+    messages::MessageType,
+};
 
 #[derive(Serialize)]
 pub struct ChatMemberSchema {
     pub user_id: String,
     pub username: String,
-    pub global_name: String,
+    pub display_name: String,
     pub avatar: Option<String>,
     pub permissions: Option<String>,
 }
@@ -17,9 +20,32 @@ impl From<ChatMember> for ChatMemberSchema {
         Self {
             user_id: value.user_id.to_string(),
             username: value.username,
-            global_name: value.global_name,
+            display_name: value.display_name,
             avatar: value.avatar,
             permissions: value.permissions.map(|p| p.to_string()),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct LastMessageInfoSchema {
+    pub message_id: String,
+    pub author_id: String,
+    pub content: String,
+    pub message_type: MessageType,
+    pub edited_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<LastMessageInfo> for LastMessageInfoSchema {
+    fn from(value: LastMessageInfo) -> Self {
+        Self {
+            message_id: value.message_id.to_string(),
+            author_id: value.author_id.to_string(),
+            content: value.content,
+            message_type: value.message_type,
+            edited_at: value.edited_at,
+            created_at: value.created_at,
         }
     }
 }
@@ -33,11 +59,10 @@ pub struct ChatSchema {
     pub image: Option<String>,
     #[serde(rename = "type")]
     pub chat_type: ChatType,
-    pub last_message_id: Option<String>,
     pub permissions: String,
     pub created_at: DateTime<Utc>,
     pub members: Vec<ChatMemberSchema>,
-
+    pub last_message: Option<LastMessageInfoSchema>,
     pub last_read_message_id: Option<String>,
     pub max_read_message_id: Option<String>,
 }
@@ -68,9 +93,9 @@ impl ChatSchema {
             description: Some("".to_string()),
             image: chat.image,
             chat_type: chat.chat_type,
-            last_message_id: chat.last_message_id.map(|id| id.to_string()),
+            last_message: chat.last_message.map(|v| v.into()),
             permissions: chat.permissions.to_string(),
-            created_at: chat.timestamp,
+            created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
             last_read_message_id: current_last_read,
             max_read_message_id: max_read_message_id.map(|id| id.to_string()),
@@ -87,9 +112,9 @@ impl From<Chat> for ChatSchema {
             description: Some("".to_string()),
             image: chat.image,
             chat_type: chat.chat_type,
-            last_message_id: chat.last_message_id.map(|id| id.to_string()),
+            last_message: chat.last_message.map(|v| v.into()),
             permissions: chat.permissions.to_string(),
-            created_at: chat.timestamp,
+            created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
             last_read_message_id: None,
             max_read_message_id: None,

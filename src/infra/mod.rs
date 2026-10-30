@@ -1,6 +1,5 @@
 pub mod auth;
 pub mod data;
-pub mod event_bus;
 pub mod id_generator;
 pub mod image;
 pub mod s3;

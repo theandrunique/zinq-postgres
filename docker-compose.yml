@@ -1,14 +1,20 @@
-version: '3.8'
-
 services:
-  scylla:
-    image: scylladb/scylla:6.2.3
-    container_name: scylla
+  postgres:
+    image: postgres:16-alpine
     ports:
-      - "9042:9042"
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zinq_db
     volumes:
-      - scylla_data:/var/lib/scylla
-    command: --smp 1
+      - data_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zinq_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   mailhog:
     image: mailhog/mailhog
@@ -16,42 +22,62 @@ services:
       - 1025:1025
       - 8025:8025
 
-  minio:
-    image: quay.io/minio/minio:latest
+  rustfs:
+    image: rustfs/rustfs:1.0.4
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: [ "server", "--console-address", ":9001", "/data" ]
+      - "9000:9000" # S3 API
+      - "9001:9001" # Console
     volumes:
-      - data-minio:/data
+      - data_rustfs:/data
+      - logs_rustfs:/logs
     environment:
-      MINIO_ROOT_USER: miniopass
-      MINIO_ROOT_PASSWORD: miniopass
-      MINIO_DEFAULT_BUCKETS: zinq
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
-  minio-buckets:
-    image: quay.io/minio/mc:latest
+  rustfs-bucket:
+    image: amazon/aws-cli:latest
     depends_on:
-      - minio
-    restart: on-failure
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set dockerminio http://minio:9000 miniopass miniopass;
-      /usr/bin/mc mb dockerminio/zinq;
-      /usr/bin/mc anonymous set public dockerminio/zinq;
-      exit 0;
-      "
+      rustfs:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        # creating a bucket if it doesn't esists
+        aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket zinq-data >/dev/null 2>&1 || \
+        aws --endpoint-url http://rustfs:9000 s3 mb s3://zinq-data
 
-  nats:
-    image: nats:latest
-    ports:
-      - "8222:8222"
-      - "4222:4222"
-    command: "-js -sd /data"
-    volumes:
-      - nats_data:/data
+        aws --endpoint-url http://rustfs:9000 s3api put-public-access-block \
+          --bucket zinq-data \
+          --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false" || true
+
+        aws --endpoint-url http://rustfs:9000 s3api put-bucket-policy \
+          --bucket zinq-data \
+          --policy '{
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::zinq-data/*"
+              }
+            ]
+          }' || true
+    restart: "no"
 
 volumes:
-  scylla_data:
-  data-minio:
-  nats_data:
+  data_postgres:
+  data_rustfs:
+  logs_rustfs:

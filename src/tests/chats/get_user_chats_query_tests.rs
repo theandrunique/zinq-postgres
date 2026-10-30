@@ -65,7 +65,7 @@ async fn test_get_user_chats_returns_chats() {
 
     for chat in &result {
         assert!(
-            chat.last_message_id.is_some(),
+            chat.last_message.is_some(),
             "All returned chats should have last_message_id set"
         );
 

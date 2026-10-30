@@ -30,17 +30,11 @@ impl RequestHandler for GetUserChatsQueryHandler {
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
-        let mut chats = self
+        let chats = self
             .chat_repository
             .get_user_chats(request.current_user_id)
             .await
             .map_err(Error::InternalServerError)?;
-
-        chats.retain(|chat| {
-            let is_dm_without_message =
-                chat.chat_type == ChatType::Dm && chat.last_message_id.is_none();
-            !is_dm_without_message
-        });
 
         Ok(chats)
     }

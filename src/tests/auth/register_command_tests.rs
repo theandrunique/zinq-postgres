@@ -7,7 +7,7 @@ fn valid_command() -> RegisterCommand {
     RegisterCommand {
         username: "testuser".to_string(),
         password: "Test123!".to_string(),
-        global_name: "Test User".to_string(),
+        display_name: "Test User".to_string(),
         email: "test@example.com".to_string(),
     }
 }
@@ -27,7 +27,7 @@ async fn test_register_command_success() {
     assert_eq!(user.email, "test@example.com");
     assert_eq!(user.display_name, "Test User");
     assert!(user.is_active);
-    assert!(!user.is_email_verified);
+    assert!(!user.email_verified);
 }
 
 #[tokio::test]

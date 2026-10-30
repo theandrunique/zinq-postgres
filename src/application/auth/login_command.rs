@@ -1,13 +1,18 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler, config, domain::auth::{
+    application::RequestHandler,
+    config,
+    domain::auth::{
         UserSession, UserSessionCreateRequest,
         data::{user_repository::UserRepository, user_session_repository::UserSessionRepository},
-    }, error::Error, infra::{
+    },
+    error::Error,
+    infra::{
         auth::{hash_handler::HashHandler, jwt_handler::JwtHandler},
         id_generator::IdGenerator,
-    }, state::AppState,
+    },
+    state::AppState,
 };
 
 #[derive(Debug, validator::Validate, Clone)]
@@ -19,7 +24,7 @@ pub struct LoginCommand {
 
 pub struct LoginCommandResult {
     pub access_token: String,
-    pub expires_in: u64,
+    pub expires_in: i64,
     pub refresh_token: String,
 }
 

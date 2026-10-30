@@ -8,7 +8,7 @@ use crate::{
             User, UserCreateRequest,
             data::user_repository::{AddUserError, UserRepository},
             validation::{
-                validate_email, validate_global_name, validate_password, validate_username,
+                validate_display_name, validate_email, validate_password, validate_username,
             },
         },
         events::{DomainEvent, Mediator},
@@ -26,8 +26,8 @@ pub struct RegisterCommand {
     #[validate(custom(function = validate_password))]
     pub password: String,
 
-    #[validate(custom(function = validate_global_name))]
-    pub global_name: String,
+    #[validate(custom(function = validate_display_name))]
+    pub display_name: String,
 
     #[validate(custom(function = validate_email))]
     pub email: String,
@@ -63,7 +63,7 @@ impl RequestHandler for RegisterComandHandler {
             id: self.id_gen.gen_id().await,
             username: command.username,
             password_hash: self.hash_handler.hash(&command.password).await?,
-            display_name: command.global_name,
+            display_name: command.display_name,
             email: command.email,
         });
 

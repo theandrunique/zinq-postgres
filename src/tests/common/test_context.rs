@@ -1,6 +1,6 @@
 use std::{fs, sync::Arc};
 
-use scylla::client::{session::Session, session_builder::SessionBuilder};
+use sqlx::{Pool, Postgres, query};
 
 use crate::{
     application::{
@@ -21,32 +21,32 @@ use crate::{
     domain::{
         auth::User,
         chats::{Chat, ChatPermissions, data::ChatLoader},
-        event_log::data::EventLogRepository,
         events::Mediator,
         messages::{CreateMessageRequest, Message},
     },
     infra::{
+        S3Service,
         auth::{
             hash_handler::BcryptHandler, jwks_service::FileJwksService, jwt_handler::JwtService,
             totp_handler::TotpService,
         },
         data::{
-            attachment_repository::ScyllaAttachmentRepository, chat_loader::ScyllaChatLoader,
-            chat_member_repository::ScyllaChatMemberRepository,
-            chat_repotisory::ScyllaChatRepository, event_log_repository::ScyllaEventLogRepository,
-            message_ack_repository::ScyllaMessageAckRepository,
-            message_repository::ScyllaMessageRepository, user_repository::ScyllaUserRepository,
-            user_session_repository::ScyllaUserSessionRepository,
+            attachment_repository::PostgresAttachmentRepository, chat_loader::PostgresChatLoader,
+            chat_member_repository::PostgresChatMemberRepository,
+            chat_repotisory::PostgresChatRepository, create_pool,
+            message_ack_repository::PostgresMessageAckRepository,
+            message_repository::PostgresMessageRepository, run_migrations,
+            user_repository::PostgresUserRepository,
+            user_session_repository::PostgresUserSessionRepository,
         },
-        event_bus::NatsEventBus,
         id_generator::SnowflakeIdGenerator,
         s3::AwsS3Service,
         smtp_client::SmtpService,
     },
     state::AppState,
     tests::common::test_config::{
-        NATS_URL_ENV, S3_ACCESS_KEY_ENV, S3_BUCKET_ENV, S3_ENDPOINT_ENV, S3_REGION_ENV,
-        S3_SECRET_KEY_ENV, SCYLLA_HOST_ENV, SCYLLA_PORT_ENV,
+        POSTGRES_HOST_ENV, POSTGRES_PORT_ENV, S3_ACCESS_KEY_ENV, S3_BUCKET_ENV, S3_ENDPOINT_ENV,
+        S3_REGION_ENV, S3_SECRET_KEY_ENV,
     },
 };
 
@@ -55,29 +55,26 @@ pub struct TestContext {
 }
 
 impl TestContext {
-    pub async fn new(keyspace: &str) -> Self {
-        let host = std::env::var(SCYLLA_HOST_ENV).expect("TEST_SCYLLA_HOST not set");
-        let port: u16 = std::env::var(SCYLLA_PORT_ENV)
-            .expect("TEST_SCYLLA_PORT not set")
-            .parse()
-            .expect("Invalid port");
+    pub async fn new(database: &str) -> Self {
+        let pg_host = std::env::var(POSTGRES_HOST_ENV).expect("TEST_POSGRES_HOST not set");
+        let pg_port = std::env::var(POSTGRES_PORT_ENV).expect("TEST_POSGRES_PORT not set");
 
-        let hostname = format!("{host}:{port}");
-
-        let session = Arc::new(
-            SessionBuilder::new()
-                .known_node(hostname)
-                .build()
-                .await
-                .unwrap(),
+        let master_url = format!(
+            "postgres://postgres:postgres@{}:{}/postgres",
+            pg_host, pg_port
         );
+        let master_pool = create_pool(&master_url).await.unwrap();
+        Self::setup_database(master_pool.clone(), database).await;
+        master_pool.close().await;
 
-        Self::setup_database(session.clone(), keyspace).await;
-
-        session.use_keyspace(keyspace, true).await.unwrap();
+        let pg_url = format!(
+            "postgres://postgres:postgres@{}:{}/{}",
+            pg_host, pg_port, database
+        );
+        let pool = create_pool(&pg_url).await.unwrap();
+        run_migrations(&pool).await.unwrap();
 
         let jwks_service = FileJwksService::load_from_directory("keys").unwrap();
-        let jwks_service_clone = FileJwksService::load_from_directory("keys").unwrap();
 
         let s3_endpoint = std::env::var(S3_ENDPOINT_ENV).expect("TEST_S3_ENDPOINT not set");
         let s3_access_key = std::env::var(S3_ACCESS_KEY_ENV).expect("TEST_S3_ACCESS_KEY not set");
@@ -94,9 +91,7 @@ impl TestContext {
             region: s3_region,
         };
 
-        let s3_service: Arc<dyn crate::infra::s3::S3Service> =
-            Arc::new(AwsS3Service::new(&s3_config).await);
-
+        let s3_service: Arc<dyn S3Service> = Arc::new(AwsS3Service::new(&s3_config).await);
         let _ = s3_service.create_bucket(&s3_config.bucket_name).await;
 
         let id_gen = Arc::new(SnowflakeIdGenerator::new());
@@ -112,28 +107,19 @@ impl TestContext {
         let channel_image_service =
             Arc::new(ChannelImageService::new(s3_service.clone(), &s3_config));
 
-        let nats_url = std::env::var(NATS_URL_ENV).expect("TEST_NATS_URL not set");
-        let nats_client = async_nats::connect(&nats_url).await.unwrap();
-        let jetstream = async_nats::jetstream::new(nats_client);
-
-        let event_bus = Arc::new(NatsEventBus::new(jetstream.clone()));
-        event_bus.initialize_stream().await.unwrap();
-
         let mut state = AppState {
-            event_bus,
-            event_log_repository: Arc::new(ScyllaEventLogRepository::new(session.clone())),
             id_gen,
-            user_repository: Arc::new(ScyllaUserRepository::new(session.clone())),
-            user_session_repository: Arc::new(ScyllaUserSessionRepository::new(session.clone())),
-            chat_loader: Arc::new(ScyllaChatLoader::new(session.clone())),
-            chat_member_repository: Arc::new(ScyllaChatMemberRepository::new(session.clone())),
-            chat_repository: Arc::new(ScyllaChatRepository::new(session.clone())),
-            message_repository: Arc::new(ScyllaMessageRepository::new(session.clone())),
-            attachment_repository: Arc::new(ScyllaAttachmentRepository::new(session.clone())),
-            message_ack_repository: Arc::new(ScyllaMessageAckRepository::new(session.clone())),
+            user_repository: Arc::new(PostgresUserRepository::new(pool.clone())),
+            user_session_repository: Arc::new(PostgresUserSessionRepository::new(pool.clone())),
+            chat_loader: Arc::new(PostgresChatLoader::new(pool.clone())),
+            chat_member_repository: Arc::new(PostgresChatMemberRepository::new(pool.clone())),
+            chat_repository: Arc::new(PostgresChatRepository::new(pool.clone())),
+            message_repository: Arc::new(PostgresMessageRepository::new(pool.clone())),
+            attachment_repository: Arc::new(PostgresAttachmentRepository::new(pool.clone())),
+            message_ack_repository: Arc::new(PostgresMessageAckRepository::new(pool.clone())),
             hash_handler: Arc::new(BcryptHandler::new()),
-            jwks_service: Arc::new(jwks_service),
-            jwt_handler: Arc::new(JwtService::new(jwks_service_clone, 3600)),
+            jwks_service: Arc::new(jwks_service.clone()),
+            jwt_handler: Arc::new(JwtService::new(jwks_service, 3600)),
             smtp_client: Arc::new(SmtpService::new(
                 "test@test.com".to_string(),
                 "smtp.test.com".to_string(),
@@ -154,35 +140,32 @@ impl TestContext {
         Self { app_state: state }
     }
 
-    async fn setup_database(session: Arc<Session>, keyspace: &str) {
-        session.query_unpaged(
-            format!("CREATE KEYSPACE IF NOT EXISTS {} WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 1}}", keyspace),
-            &[]
-        ).await.expect("Failed to create keyspace");
+    async fn setup_database(pool: Pool<Postgres>, database: &str) {
+        let mut drop_builder = sqlx::QueryBuilder::new("DROP DATABASE IF EXISTS ");
+        drop_builder.push(database);
+        drop_builder.push(" WITH (FORCE)");
 
-        session.use_keyspace(keyspace, true).await.unwrap();
+        drop_builder
+            .build()
+            .execute(&pool)
+            .await
+            .expect("Failed to drop database");
 
-        let migration_cql =
-            fs::read_to_string("migrations/1.cql").expect("Failed to read migration file");
+        let mut query_builder = sqlx::QueryBuilder::new("CREATE DATABASE ");
+        query_builder.push(database);
 
-        let queries: Vec<&str> = migration_cql.split(';').collect();
-
-        for query in queries {
-            let trimmed = query.trim();
-            if !trimmed.is_empty() {
-                session
-                    .query_unpaged(trimmed, &[])
-                    .await
-                    .expect(&format!("Failed to execute migration: {}", trimmed));
-            }
-        }
+        query_builder
+            .build()
+            .execute(&pool)
+            .await
+            .expect("Failed to create database");
     }
 
     pub async fn create_test_user(&self, username: &str, email: &str) -> User {
         let cmd = RegisterCommand {
             username: username.to_string(),
             password: "Test123!".to_string(),
-            global_name: username.to_string(),
+            display_name: username.to_string(),
             email: email.to_string(),
         };
 
