@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::Router;
+use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
@@ -46,6 +47,7 @@ async fn main() {
         .nest("/emoji-packs", emoji_router(app_state.clone()))
         .nest("/chats", chat_router(app_state.clone()))
         .nest("/ping", ping_router())
+        .fallback_service(ServeDir::new("static").fallback(ServeFile::new("static/index.html")))
         .layer(socket_layer);
 
     let app_config = config::config();
