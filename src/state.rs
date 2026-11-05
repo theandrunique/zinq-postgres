@@ -112,7 +112,7 @@ pub async fn init_state() -> AppState {
         .await
         .expect("Failed to run migrations");
 
-    let mut app_state = AppState {
+    AppState {
         id_gen: id_gen.clone(),
         user_repository: Arc::new(PostgresUserRepository::new(pool.clone())),
         user_session_repository: Arc::new(PostgresUserSessionRepository::new(pool.clone())),
@@ -141,7 +141,5 @@ pub async fn init_state() -> AppState {
         avatar_service,
         channel_image_service,
         mediator: Arc::new(Mediator::new()),
-    };
-
-    app_state
+    }
 }
