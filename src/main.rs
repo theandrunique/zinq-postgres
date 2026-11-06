@@ -40,6 +40,8 @@ async fn main() {
     let (socket_layer, io) = gateway(app_state.clone());
     app_state.register_handlers(io).await;
 
+    let config = config::config();
+
     let app = Router::new()
         .nest("/.well-known", well_known_router(app_state.clone()))
         .nest("/users", user_router(app_state.clone()))
@@ -47,11 +49,13 @@ async fn main() {
         .nest("/emoji-packs", emoji_router(app_state.clone()))
         .nest("/chats", chat_router(app_state.clone()))
         .nest("/ping", ping_router())
-        .fallback_service(ServeDir::new("static").fallback(ServeFile::new("static/index.html")))
+        .fallback_service(
+            ServeDir::new(&config.frontend_dist_dir)
+                .fallback(ServeFile::new(&config.frontend_fallback)),
+        )
         .layer(socket_layer);
 
-    let app_config = config::config();
-    let address = format!("0.0.0.0:{}", app_config.port);
+    let address = format!("0.0.0.0:{}", config.port);
     let socket_addr: SocketAddr = address.parse().expect("Unable to parse socket address");
 
     let listener = tokio::net::TcpListener::bind(socket_addr)

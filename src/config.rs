@@ -34,6 +34,8 @@ pub struct Config {
     pub smtp: SmtpConfig,
     pub auth: AuthConfig,
     pub s3: S3Config,
+    pub frontend_dist_dir: String,
+    pub frontend_fallback: String,
 }
 
 pub static CONFIG: OnceCell<Config> = OnceCell::new();
@@ -75,6 +77,9 @@ fn init_config() -> Config {
             bucket_name: env::var("AWS_BUCKET_NAME").expect("AWS_BUCKET_NAME required"),
             region: env::var("AWS_REGION").unwrap_or("us-east-1".to_string()),
         },
+        frontend_dist_dir: env::var("FRONTEND_DIST_DIR").unwrap_or_else(|_| "static".to_string()),
+        frontend_fallback: env::var("FRONTEND_FALLBACK")
+            .unwrap_or_else(|_| "static/index.html".to_string()),
     }
 }
 
