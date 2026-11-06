@@ -135,8 +135,7 @@ impl TestContext {
             mediator: Arc::new(Mediator::new()),
         };
 
-        let (_, io) = crate::gateway::gateway(state.clone());
-        state.register_handlers(io).await;
+        state.register_mediator_handlers().await;
 
         Self { app_state: state }
     }

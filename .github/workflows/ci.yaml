@@ -58,7 +58,7 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: SvelteKit Type Check & Lint
+      - name: SvelteKit Type Check
         working-directory: ./frontend
         run: npm run check
 
@@ -77,6 +77,8 @@ jobs:
       - frontend-check
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

@@ -11,6 +11,10 @@ RUN npm run build -- --mode ${BUILD_MODE}
 
 FROM rust:1.97.1-alpine AS backend-build
 
+# Alpine's openssl-dev ships only shared libraries, but the musl target links
+# statically by default. Link libc/OpenSSL dynamically so -lssl/-lcrypto resolve.
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+
 RUN apk add --no-cache openssl-dev pkgconf
 
 WORKDIR /app
