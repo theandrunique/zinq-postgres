@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub struct ChatCreateMetaMessage {
-    mediator: Arc<Mediator>,
+    mediator: Weak<Mediator>,
     message_repository: Arc<dyn MessageRepository>,
     id_gen: Arc<dyn IdGenerator>,
 }
@@ -22,7 +22,7 @@ pub struct ChatCreateMetaMessage {
 impl ChatCreateMetaMessage {
     pub fn new(app_state: &AppState) -> Self {
         Self {
-            mediator: Arc::clone(&app_state.mediator),
+            mediator: Arc::downgrade(&app_state.mediator),
             message_repository: Arc::clone(&app_state.message_repository),
             id_gen: Arc::clone(&app_state.id_gen),
         }
@@ -59,7 +59,12 @@ impl DomainEventHandler for ChatCreateMetaMessage {
         });
 
         self.message_repository.upsert(&meta_message).await?;
-        self.mediator
+
+        let mediator = self
+            .mediator
+            .upgrade()
+            .context("Mediator was dropped before publishing the create meta message")?;
+        mediator
             .publish(&DomainEvent::MessageCreate {
                 message: meta_message,
                 attachments: vec![],

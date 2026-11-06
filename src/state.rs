@@ -69,6 +69,14 @@ pub struct AppState {
 
 impl AppState {
     pub async fn register_handlers(&mut self, io: SocketIo) {
+        self.register_mediator_handlers().await;
+
+        self.mediator
+            .register(EventPublisher::new(io, self.chat_repository.clone()))
+            .await;
+    }
+
+    pub async fn register_mediator_handlers(&mut self) {
         self.mediator
             .register(ChatCreateMetaMessage::new(self))
             .await;
@@ -77,9 +85,6 @@ impl AppState {
             .await;
         self.mediator
             .register(ChatMemberRemovedMetaMessage::new(self))
-            .await;
-        self.mediator
-            .register(EventPublisher::new(io, self.chat_repository.clone()))
             .await;
     }
 }
