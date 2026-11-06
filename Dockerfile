@@ -35,7 +35,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates libgcc openssl
 
 COPY --from=backend-build /app/target/release/zinq ./zinq
-COPY --from=frontend-build /app/frontend/build ./static
+COPY --from=frontend-build /app/build ./static
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
