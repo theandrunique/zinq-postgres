@@ -16,6 +16,7 @@ jobs:
       contents: write
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
+      commit_sha: ${{ steps.bump.outputs.commit_sha }}
 
     steps:
       - name: Checkout repository
@@ -46,10 +47,11 @@ jobs:
           git commit -m "chore: release v$NEW_VERSION"
           git tag "v$NEW_VERSION"
 
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
           git push origin master
           git push origin "v$NEW_VERSION"
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
   build-docker:
     needs: release
@@ -79,6 +81,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -86,6 +89,8 @@ jobs:
           tags: |
             ${{ steps.image.outputs.name }}:${{ needs.release.outputs.new_version }}
             ${{ steps.image.outputs.name }}:latest
+          build-args: |
+            GIT_COMMIT=${{ needs.release.outputs.commit_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -94,9 +99,12 @@ jobs:
         with:
           tag_name: v${{ needs.release.outputs.new_version }}
           name: Release v${{ needs.release.outputs.new_version }}
+          generate_release_notes: true
           body: |
             Automated release v${{ needs.release.outputs.new_version }}
 
-            Docker image: `${{ steps.image.outputs.name }}:${{ needs.release.outputs.new_version }}`
+            **Docker image:** `${{ steps.image.outputs.name }}:${{ needs.release.outputs.new_version }}`
+            **Commit:** `${{ needs.release.outputs.commit_sha }}`
+            **Image digest:** `${{ steps.build.outputs.digest }}`
           draft: false
           prerelease: false

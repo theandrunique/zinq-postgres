@@ -6,9 +6,7 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 
 use crate::{
     gateway::gateway,
-    routers::{
-        auth_router, chat_router, emoji_router, ping_router, user_router, well_known_router,
-    },
+    routers::{api_router, ping_router, well_known_router},
     state::init_state,
 };
 
@@ -44,11 +42,8 @@ async fn main() {
 
     let app = Router::new()
         .nest("/.well-known", well_known_router(app_state.clone()))
-        .nest("/users", user_router(app_state.clone()))
-        .nest("/auth", auth_router(app_state.clone()))
-        .nest("/emoji-packs", emoji_router(app_state.clone()))
-        .nest("/chats", chat_router(app_state.clone()))
         .nest("/ping", ping_router())
+        .nest("/api/v1", api_router(app_state.clone()))
         .fallback_service(
             ServeDir::new(&config.frontend_dist_dir)
                 .fallback(ServeFile::new(&config.frontend_fallback)),
