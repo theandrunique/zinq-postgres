@@ -43,6 +43,7 @@ pub enum Error {
     MessageNotFound(i64),
     MessageWasSentByAnotherUser(i64),
     InvalidRequestBody(HashMap<String, Vec<String>>),
+    RouteNotFound,
     InternalServerError(anyhow::Error),
 }
 

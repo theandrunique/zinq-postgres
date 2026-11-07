@@ -45,7 +45,7 @@ fn init_config() -> Config {
 
     Config {
         port: env::var("PORT")
-            .unwrap_or("3000".to_string())
+            .unwrap_or("8000".to_string())
             .parse()
             .expect("Failed to parse port"),
         postgres_url: env::var("POSTGRES_URL").expect("POSTGRES_URL is required"),

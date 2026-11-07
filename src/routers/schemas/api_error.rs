@@ -27,6 +27,7 @@ enum ErrorCode {
     EmailAlreadyInUse,
     MessageNotFound,
     MessageWasSentByAnotherUser,
+    RouteNotFound,
     InternalServerError,
 }
 
@@ -70,6 +71,7 @@ impl IntoResponse for ApiError {
         let status = match self.code {
             ErrorCode::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             ErrorCode::AuthInvalidToken => StatusCode::UNAUTHORIZED,
+            ErrorCode::RouteNotFound => StatusCode::NOT_FOUND,
             _ => StatusCode::BAD_REQUEST,
         };
 
@@ -167,6 +169,7 @@ impl IntoResponse for Error {
                 ErrorCode::MessageWasSentByAnotherUser,
                 format!("Message {} was sent by another user", message_id),
             ),
+            Error::RouteNotFound => ApiError::new(ErrorCode::RouteNotFound, "Not found"),
         };
 
         e.into_response()

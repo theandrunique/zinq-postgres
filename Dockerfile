@@ -1,15 +1,18 @@
 FROM node:22-alpine AS frontend-build
 
 ARG BUILD_MODE=production
+ARG GIT_COMMIT=""
 
 WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+COPY Cargo.toml /Cargo.toml
+ENV GIT_COMMIT=$GIT_COMMIT
 RUN npm run build -- --mode ${BUILD_MODE}
 
 
-FROM rust:1.97.1-alpine AS backend-build
+FROM rust:1.97.1-alpine3.24 AS backend-build
 
 # Alpine's openssl-dev ships only shared libraries, but the musl target links
 # statically by default. Link libc/OpenSSL dynamically so -lssl/-lcrypto resolve.
@@ -33,7 +36,7 @@ RUN touch src/main.rs \
     && cargo build --release --locked --bin zinq
 
 
-FROM alpine:3.22
+FROM alpine:3.24
 
 WORKDIR /app
 RUN apk add --no-cache ca-certificates libgcc openssl
@@ -43,8 +46,8 @@ COPY --from=frontend-build /app/build ./static
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENV PORT=8080
-EXPOSE 8080
+ENV PORT=8000
+EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["./zinq"]
