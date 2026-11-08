@@ -1,0 +1,49 @@
+name: Bump release version
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: release-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    # Skip the run triggered by the version bump commit itself.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore: release v') }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        run: |
+          CURRENT=$(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          MINOR=$((MINOR + 1))
+          PATCH=0
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+          sed -i "/^name = \"zinq\"$/,/^version = / s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.lock
+
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore: release v$NEW_VERSION"
+          git tag "v$NEW_VERSION"
+
+          git push origin master
+          git push origin "v$NEW_VERSION"
