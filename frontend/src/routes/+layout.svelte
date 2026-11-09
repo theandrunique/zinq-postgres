@@ -1,10 +1,11 @@
 <script lang="ts">
   import "./layout.css";
+  import AuthGuard from "#lib/components/AuthGuard.svelte";
   import type { LayoutProps } from "./$types";
 
   let { children }: LayoutProps = $props();
 </script>
 
-<svelte:head></svelte:head>
-
-{@render children()}
+<AuthGuard>
+  {@render children()}
+</AuthGuard>
