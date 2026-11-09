@@ -39,6 +39,10 @@ export default defineConfig(({ command }) => {
           runes: ({ filename }) => (filename.split(/[/\\]/).includes("node_modules") ? undefined : true),
         },
         adapter: adapter({ fallback: "index.html" }),
+        version: {
+          name: version,
+          pollInterval: 60_000,
+        },
       }),
     ],
     server: {
