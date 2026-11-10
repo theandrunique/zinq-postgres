@@ -11,7 +11,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export type SessionLifetime = "WEEK" | "MONTH" | "MONTH3" | "MONTH6" | "MONTH12";
+export type UserSessionLifetime = "WEEK" | "MONTH" | "MONTH3" | "MONTH6" | "MONTH12";
 
 export interface UserProfile {
   id: string;
@@ -20,7 +20,7 @@ export interface UserProfile {
   bio: string | null;
   avatar: string | null;
   created_at: string;
-  sessions_ttl: SessionLifetime;
+  sessions_ttl: UserSessionLifetime;
   email: string;
   email_verified: boolean;
 }
@@ -342,12 +342,20 @@ export class AuthManager {
       });
     }
 
+    let profile = current.profile;
+
+    try {
+      profile = await this.fetchProfile(tokens.access_token);
+    } catch {
+      // Keep the previous profile if userinfo is temporarily unavailable.
+    }
+
     const user = new AuthUser({
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       token_type: "Bearer",
       expires_at: nowSeconds() + tokens.expires_in,
-      profile: current.profile,
+      profile,
     });
 
     this.persistAndSetUser(user);
@@ -356,11 +364,7 @@ export class AuthManager {
   }
 
   private async createUserFromTokens(tokens: TokensResponse): Promise<AuthUser> {
-    const profile = await this.request<UserProfile>("/users/@me", {
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-      },
-    });
+    const profile = await this.fetchProfile(tokens.access_token);
 
     return new AuthUser({
       access_token: tokens.access_token,
@@ -368,6 +372,14 @@ export class AuthManager {
       token_type: "Bearer",
       expires_at: nowSeconds() + tokens.expires_in,
       profile,
+    });
+  }
+
+  private fetchProfile(accessToken: string): Promise<UserProfile> {
+    return this.request<UserProfile>("/users/@me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
   }
 
