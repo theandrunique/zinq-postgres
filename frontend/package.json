@@ -43,7 +43,7 @@
     },
     "imports": {
         "#lib": "./src/lib/index.ts",
-        "#lib/components/ui": "./src/lib/components/ui",
+        "#lib/components/ui": "./src/lib/components/ui/index.ts",
         "#lib/utils": "./src/lib/utils/index.ts",
         "#features": "./src/features/*",
         "#services": "./src/services/*",
