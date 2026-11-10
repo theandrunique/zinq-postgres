@@ -1,0 +1,350 @@
+/* ==========================================================================
+   Primitives
+   Theme-independent scales. Values are based on Twitch's design tokens,
+   normalized from a 10px rem base to px. Do not use these in components.
+   ========================================================================== */
+
+:root {
+  /* Palette ---------------------------------------------------------------- */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-grey-1: #0e0e10;
+  --color-grey-2: #18181b;
+  --color-grey-3: #1f1f23;
+  --color-grey-4: #26262c;
+  --color-grey-5: #323239;
+  --color-grey-6: #3b3b44;
+  --color-grey-7: #53535f;
+  --color-grey-8: #848494;
+  --color-grey-9: #adadb8;
+  --color-grey-10: #c8c8d0;
+  --color-grey-11: #d3d3d9;
+  --color-grey-12: #dedee3;
+  --color-grey-13: #e6e6ea;
+  --color-grey-14: #efeff1;
+  --color-grey-15: #f7f7f8;
+
+  --color-purple-1: #040109;
+  --color-purple-2: #0d031c;
+  --color-purple-3: #15052e;
+  --color-purple-4: #23094e;
+  --color-purple-5: #330c6e;
+  --color-purple-6: #451093;
+  --color-purple-7: #5c16c5;
+  --color-purple-8: #772ce8;
+  --color-purple-9: #9147ff;
+  --color-purple-10: #a970ff;
+  --color-purple-11: #bf94ff;
+  --color-purple-12: #d1b3ff;
+  --color-purple-13: #e3d1ff;
+  --color-purple-14: #ede0ff;
+  --color-purple-15: #f3ebff;
+
+  --color-red-1: #ffffff;
+  --color-red-2: #120202;
+  --color-red-3: #200404;
+  --color-red-4: #3b0807;
+  --color-red-5: #530a09;
+  --color-red-6: #6e0e0c;
+  --color-red-7: #971311;
+  --color-red-8: #bb1411;
+  --color-red-9: #eb0400;
+  --color-red-10: #ff4f4d;
+  --color-red-11: #ff8280;
+  --color-red-12: #ffaaa8;
+  --color-red-13: #ffcdcc;
+  --color-red-14: #ffdcdb;
+  --color-red-15: #ffe6e5;
+
+  --color-orange-1: #ffffff;
+  --color-orange-2: #090601;
+  --color-orange-3: #120d02;
+  --color-orange-4: #251a04;
+  --color-orange-5: #372706;
+  --color-orange-6: #442f08;
+  --color-orange-7: #65470b;
+  --color-orange-8: #7c570e;
+  --color-orange-9: #9e6900;
+  --color-orange-10: #c28100;
+  --color-orange-11: #e69900;
+  --color-orange-12: #ffb31a;
+  --color-orange-13: #ffd37a;
+  --color-orange-14: #ffdf9e;
+  --color-orange-15: #ffebc2;
+
+  --color-green-1: #ffffff;
+  --color-green-2: #010906;
+  --color-green-3: #02120c;
+  --color-green-4: #042015;
+  --color-green-5: #063221;
+  --color-green-6: #074029;
+  --color-green-7: #0a5738;
+  --color-green-8: #016a40;
+  --color-green-9: #018952;
+  --color-green-10: #00a865;
+  --color-green-11: #00c274;
+  --color-green-12: #00db84;
+  --color-green-13: #00f593;
+  --color-green-14: #5cffbe;
+  --color-green-15: #a8ffdc;
+
+  --color-blue-1: #ffffff;
+  --color-blue-2: #020712;
+  --color-blue-3: #040d20;
+  --color-blue-4: #071a40;
+  --color-blue-5: #0a255c;
+  --color-blue-6: #0d3177;
+  --color-blue-7: #1345aa;
+  --color-blue-8: #1756d3;
+  --color-blue-9: #1f69ff;
+  --color-blue-10: #528bff;
+  --color-blue-11: #7aa7ff;
+  --color-blue-12: #a3c2ff;
+  --color-blue-13: #c7daff;
+  --color-blue-14: #d6e4ff;
+  --color-blue-15: #e5eeff;
+
+  --color-cyan-1: #ffffff;
+  --color-cyan-2: #010909;
+  --color-cyan-3: #021212;
+  --color-cyan-4: #042020;
+  --color-cyan-5: #052e2e;
+  --color-cyan-6: #073b3b;
+  --color-cyan-7: #095353;
+  --color-cyan-8: #0c6a6a;
+  --color-cyan-9: #018383;
+  --color-cyan-10: #00a3a3;
+  --color-cyan-11: #00b8b8;
+  --color-cyan-12: #00d6d6;
+  --color-cyan-13: #00f0f0;
+  --color-cyan-14: #2effff;
+  --color-cyan-15: #94ffff;
+
+  --color-magenta-1: #ffffff;
+  --color-magenta-2: #12020f;
+  --color-magenta-3: #20041b;
+  --color-magenta-4: #37062e;
+  --color-magenta-5: #4e0941;
+  --color-magenta-6: #650b55;
+  --color-magenta-7: #8a0f73;
+  --color-magenta-8: #ae1392;
+  --color-magenta-9: #c516a5;
+  --color-magenta-10: #ff38db;
+  --color-magenta-11: #ff75e6;
+  --color-magenta-12: #ffa3ee;
+  --color-magenta-13: #ffc7f5;
+  --color-magenta-14: #ffd6f8;
+  --color-magenta-15: #ffe5fa;
+
+  --color-yellow-1: #ffffff;
+  --color-yellow-2: #090901;
+  --color-yellow-3: #0d0d02;
+  --color-yellow-4: #1c1c03;
+  --color-yellow-5: #292905;
+  --color-yellow-6: #373706;
+  --color-yellow-7: #4e4e09;
+  --color-yellow-8: #60600b;
+  --color-yellow-9: #7a7a00;
+  --color-yellow-10: #949400;
+  --color-yellow-11: #adad00;
+  --color-yellow-12: #c7c700;
+  --color-yellow-13: #e0e000;
+  --color-yellow-14: #ebeb00;
+  --color-yellow-15: #f5f500;
+
+  /* Alpha ------------------------------------------------------------------ */
+  --color-alpha-black-1: rgba(0, 0, 0, 0.05);
+  --color-alpha-black-2: rgba(0, 0, 0, 0.08);
+  --color-alpha-black-3: rgba(0, 0, 0, 0.13);
+  --color-alpha-black-4: rgba(0, 0, 0, 0.16);
+  --color-alpha-black-5: rgba(0, 0, 0, 0.22);
+  --color-alpha-black-6: rgba(0, 0, 0, 0.28);
+  --color-alpha-black-7: rgba(0, 0, 0, 0.4);
+  --color-alpha-black-8: rgba(0, 0, 0, 0.5);
+  --color-alpha-black-9: rgba(0, 0, 0, 0.6);
+  --color-alpha-black-10: rgba(0, 0, 0, 0.7);
+  --color-alpha-black-11: rgba(0, 0, 0, 0.75);
+  --color-alpha-black-12: rgba(0, 0, 0, 0.8);
+  --color-alpha-black-13: rgba(0, 0, 0, 0.85);
+  --color-alpha-black-14: rgba(0, 0, 0, 0.9);
+  --color-alpha-black-15: rgba(0, 0, 0, 0.95);
+
+  --color-alpha-white-1: rgba(255, 255, 255, 0.05);
+  --color-alpha-white-2: rgba(255, 255, 255, 0.08);
+  --color-alpha-white-3: rgba(255, 255, 255, 0.13);
+  --color-alpha-white-4: rgba(255, 255, 255, 0.16);
+  --color-alpha-white-5: rgba(255, 255, 255, 0.22);
+  --color-alpha-white-6: rgba(255, 255, 255, 0.28);
+  --color-alpha-white-7: rgba(255, 255, 255, 0.4);
+  --color-alpha-white-8: rgba(255, 255, 255, 0.5);
+  --color-alpha-white-9: rgba(255, 255, 255, 0.6);
+  --color-alpha-white-10: rgba(255, 255, 255, 0.7);
+  --color-alpha-white-11: rgba(255, 255, 255, 0.75);
+  --color-alpha-white-12: rgba(255, 255, 255, 0.8);
+  --color-alpha-white-13: rgba(255, 255, 255, 0.85);
+  --color-alpha-white-14: rgba(255, 255, 255, 0.9);
+  --color-alpha-white-15: rgba(255, 255, 255, 0.95);
+
+  --color-alpha-grey-dark-1: rgba(83, 83, 95, 0.38);
+  --color-alpha-grey-dark-2: rgba(83, 83, 95, 0.48);
+  --color-alpha-grey-dark-3: rgba(83, 83, 95, 0.55);
+  --color-alpha-grey-dark-4: rgba(50, 50, 57, 0.62);
+  --color-alpha-grey-dark-5: rgba(50, 50, 57, 0.95);
+
+  --color-alpha-grey-light-1: rgba(173, 173, 184, 0.22);
+  --color-alpha-grey-light-2: rgba(173, 173, 184, 0.35);
+  --color-alpha-grey-light-3: rgba(173, 173, 184, 0.43);
+  --color-alpha-grey-light-4: rgba(222, 222, 227, 0.4);
+  --color-alpha-grey-light-5: rgba(222, 222, 227, 0.95);
+
+  --color-alpha-purple-1: rgba(92, 22, 197, 0.05);
+  --color-alpha-purple-2: rgba(92, 22, 197, 0.1);
+  --color-alpha-purple-3: rgba(92, 22, 197, 0.15);
+  --color-alpha-purple-4: rgba(92, 22, 197, 0.2);
+  --color-alpha-purple-5: rgba(92, 22, 197, 0.25);
+  --color-alpha-purple-6: rgba(92, 22, 197, 0.3);
+  --color-alpha-purple-7: rgba(92, 22, 197, 0.4);
+  --color-alpha-purple-8: rgba(92, 22, 197, 0.5);
+  --color-alpha-purple-9: rgba(92, 22, 197, 0.6);
+  --color-alpha-purple-10: rgba(92, 22, 197, 0.7);
+  --color-alpha-purple-11: rgba(92, 22, 197, 0.75);
+  --color-alpha-purple-12: rgba(92, 22, 197, 0.8);
+  --color-alpha-purple-13: rgba(92, 22, 197, 0.85);
+  --color-alpha-purple-14: rgba(92, 22, 197, 0.9);
+  --color-alpha-purple-15: rgba(92, 22, 197, 0.95);
+
+  --color-alpha-red-1: rgba(255, 130, 128, 0.05);
+  --color-alpha-red-2: rgba(255, 130, 128, 0.1);
+  --color-alpha-red-3: rgba(255, 130, 128, 0.15);
+  --color-alpha-red-4: rgba(255, 130, 128, 0.2);
+  --color-alpha-red-5: rgba(255, 130, 128, 0.25);
+
+  --color-alpha-orange-1: rgba(230, 153, 0, 0.05);
+  --color-alpha-orange-2: rgba(230, 153, 0, 0.1);
+  --color-alpha-orange-3: rgba(230, 153, 0, 0.15);
+  --color-alpha-orange-4: rgba(230, 153, 0, 0.2);
+  --color-alpha-orange-5: rgba(230, 153, 0, 0.25);
+
+  --color-alpha-green-1: rgba(0, 194, 116, 0.05);
+  --color-alpha-green-2: rgba(0, 194, 116, 0.1);
+  --color-alpha-green-3: rgba(0, 194, 116, 0.15);
+  --color-alpha-green-4: rgba(0, 194, 116, 0.2);
+  --color-alpha-green-5: rgba(0, 194, 116, 0.25);
+
+  --color-alpha-blue-1: rgba(122, 167, 255, 0.05);
+  --color-alpha-blue-2: rgba(122, 167, 255, 0.1);
+  --color-alpha-blue-3: rgba(122, 167, 255, 0.15);
+  --color-alpha-blue-4: rgba(122, 167, 255, 0.2);
+  --color-alpha-blue-5: rgba(122, 167, 255, 0.25);
+
+  /* Space ------------------------------------------------------------------ */
+  --space-0: 0;
+  --space-05: 5px;
+  --space-1: 10px;
+  --space-2: 20px;
+  --space-3: 30px;
+  --space-4: 40px;
+  --space-5: 50px;
+  --space-6: 60px;
+  --space-7: 70px;
+  --space-8: 80px;
+  --space-9: 90px;
+  --space-10: 100px;
+  --space-auto: auto;
+
+  /* Radius ----------------------------------------------------------------- */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
+  --radius-2xl: 16px;
+  --radius-full: 9000px;
+
+  /* Border width ----------------------------------------------------------- */
+  --border-width-default: 1px;
+  --border-width-checkbox: 2px;
+  --border-width-spinner: 2px;
+  --border-width-input: 1px;
+  --border-width-input-focus: 2px;
+
+  /* Typography ------------------------------------------------------------- */
+  --font-family-base: "Inter", "Roobert", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-body: 1.5;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 36px;
+  --font-size-3xl: 54px;
+
+  /* Component size primitives ---------------------------------------------- */
+  --size-button-small: 24px;
+  --size-button-default: 30px;
+  --size-button-large: 36px;
+
+  --size-icon-small: 16px;
+  --size-icon-default: 20px;
+  --size-icon-large: 24px;
+
+  --size-input-small: 24px;
+  --size-input-default: 30px;
+  --size-input-large: 36px;
+
+  --size-checkbox: 16px;
+  --size-spinner-small: 16px;
+  --size-spinner-default: 22px;
+  --size-spinner-large: 28px;
+
+  --size-range: 2px;
+  --size-range-thumb: 16px;
+
+  --size-toggle-height: 20px;
+  --size-toggle-width: 35px;
+  --size-toggle-handle: 12px;
+  --size-toggle-offset: 2px;
+
+  /* Elevation -------------------------------------------------------------- */
+  --shadow-elevation-1: 0 1px 2px var(--color-alpha-black-14), 0 0 2px var(--color-alpha-black-14);
+  --shadow-elevation-2: 0 4px 8px var(--color-alpha-black-7), 0 0 4px var(--color-alpha-black-7);
+  --shadow-elevation-3: 0 6px 16px var(--color-alpha-black-8), 0 0 4px var(--color-alpha-black-7);
+  --shadow-elevation-4: 0 12px 32px var(--color-alpha-black-8), 0 0 8px var(--color-alpha-black-7);
+  --shadow-elevation-5: 0 32px 64px var(--color-alpha-black-9), 0 0 16px var(--color-alpha-black-7);
+  --shadow-popover: 0 8px 30px var(--color-alpha-black-12);
+
+  /* Motion ----------------------------------------------------------------- */
+  --duration-fast: 100ms;
+  --duration-medium: 150ms;
+  --duration-slow: 200ms;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Focus ------------------------------------------------------------------ */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 0;
+
+  /* Layers ----------------------------------------------------------------- */
+  --z-below: -1;
+  --z-default: 1;
+  --z-above: 10;
+  --z-sticky: 1000;
+  --z-balloon: 2000;
+  --z-overlay: 3000;
+  --z-notification: 4000;
+  --z-modal: 5000;
+
+  /* Opacity ---------------------------------------------------------------- */
+  --opacity-disabled: 0.5;
+  --opacity-pulse: 0.7;
+}

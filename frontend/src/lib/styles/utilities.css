@@ -1,0 +1,42 @@
+/* ==========================================================================
+   Base styles and small shared utilities
+   ========================================================================== */
+
+@layer base {
+  html,
+  body {
+    background-color: var(--color-background-body);
+    color: var(--color-text-base);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-body);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-background-scrollbar);
+    border-radius: var(--radius-sm);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-background-scrollbar-hover);
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+@utility focus-ring {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@utility animate-loader {
+  animation: loader-spin var(--loader-duration) linear infinite;
+}

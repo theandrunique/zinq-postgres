@@ -34,10 +34,19 @@
         "typescript-eslint": "^8.60.1",
         "vite": "^8.3.0"
     },
+    "dependencies": {
+        "@lucide/svelte": "^1.70.0",
+        "bits-ui": "^2.20.6",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "tailwind-merge": "^3.7.0"
+    },
     "imports": {
-        "#lib": "./src/lib/index.js",
-        "#lib/*": "./src/lib/*",
+        "#lib": "./src/lib/index.ts",
+        "#lib/components/ui": "./src/lib/components/ui",
+        "#lib/utils": "./src/lib/utils/index.ts",
         "#features": "./src/features/*",
-        "#services": "./src/services/*"
+        "#services": "./src/services/*",
+        "#lib/*": "./src/lib/*"
     }
 }

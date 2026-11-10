@@ -5,8 +5,12 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { auth } from "#lib/auth.svelte.ts";
+  import { Button, Loader } from "#lib/components/ui/index.ts";
 
-  let { children, publicPaths = ["/login", "/register"] }: { children: Snippet; publicPaths?: string[] } = $props();
+  let {
+    children,
+    publicPaths = ["/login", "/register", "/dev/components"],
+  }: { children: Snippet; publicPaths?: string[] } = $props();
 
   const isPublic = $derived(publicPaths.includes(page.url.pathname));
 
@@ -61,19 +65,18 @@
 </script>
 
 {#if authError}
-  <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 px-4 text-center">
-    <p class="text-sm text-slate-300">{authError}</p>
-    <button
-      type="button"
-      class="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 focus:ring-2 focus:ring-sky-400/50 focus:outline-none"
-      onclick={retry}
-    >
-      Повторить
-    </button>
+  <div
+    class="flex min-h-screen flex-col items-center justify-center gap-(--space-2) bg-(--color-background-body) px-(--space-4) text-center"
+  >
+    <p class="text-(length:--font-size-sm) text-(--color-text-muted)">{authError}</p>
+    <Button onclick={retry}>Повторить</Button>
   </div>
 {:else if checking}
-  <div class="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-    <p class="animate-pulse text-sm text-slate-400">Проверка аутентификации…</p>
+  <div
+    class="flex min-h-screen items-center justify-center gap-(--space-1) bg-(--color-background-body) px-(--space-4)"
+  >
+    <Loader size="sm" />
+    <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Проверка аутентификации…</p>
   </div>
 {:else}
   {@render children()}
