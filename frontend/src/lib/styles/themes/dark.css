@@ -1,0 +1,85 @@
+/* ==========================================================================
+   Theme: dark (default)
+   Semantic roles. Only this layer should change between themes.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces --------------------------------------------------------------- */
+  --color-background-body: var(--color-grey-1);
+  --color-background-surface: var(--color-grey-2);
+  --color-background-surface-raised: var(--color-grey-3);
+  --color-background-surface-sunken: var(--color-grey-2);
+  --color-background-surface-hover: var(--color-grey-3);
+  --color-background-overlay: var(--color-alpha-black-13);
+  --color-background-scrollbar: var(--color-alpha-white-6);
+  --color-background-scrollbar-hover: var(--color-alpha-white-7);
+
+  /* Interactive ------------------------------------------------------------ */
+  --color-background-interactive: var(--color-alpha-grey-dark-1);
+  --color-background-interactive-hover: var(--color-alpha-grey-dark-2);
+  --color-background-interactive-active: var(--color-alpha-grey-dark-3);
+  --color-background-control: var(--color-alpha-grey-light-2);
+  --color-background-disabled: var(--color-alpha-grey-dark-1);
+  --color-background-tooltip: var(--color-grey-15);
+
+  /* Brand ------------------------------------------------------------------ */
+  --color-background-brand: var(--color-purple-9);
+  --color-background-brand-hover: var(--color-purple-8);
+  --color-background-brand-active: var(--color-purple-7);
+
+  /* Status ----------------------------------------------------------------- */
+  --color-background-error: var(--color-red-11);
+  --color-background-error-hover: var(--color-red-12);
+  --color-background-error-active: var(--color-red-14);
+  --color-background-error-subtle: var(--color-alpha-red-2);
+  --color-background-warn: var(--color-orange-13);
+  --color-background-warn-subtle: var(--color-alpha-orange-2);
+  --color-background-success: var(--color-green-13);
+  --color-background-success-subtle: var(--color-alpha-green-2);
+  --color-background-info: var(--color-blue-12);
+  --color-background-info-subtle: var(--color-alpha-blue-2);
+
+  /* Text ------------------------------------------------------------------- */
+  --color-text-base: var(--color-grey-14);
+  --color-text-muted: var(--color-grey-9);
+  --color-text-subtle: var(--color-grey-8);
+  --color-text-inverse: var(--color-grey-1);
+  --color-text-disabled: var(--color-grey-7);
+  --color-text-placeholder: var(--color-grey-9);
+  --color-text-brand: var(--color-purple-11);
+  --color-text-link: var(--color-purple-11);
+  --color-text-link-hover: var(--color-purple-10);
+  --color-text-on-brand: var(--color-white);
+  --color-text-on-error: var(--color-black);
+  --color-text-on-warn: var(--color-black);
+  --color-text-on-success: var(--color-black);
+  --color-text-on-info: var(--color-black);
+  --color-text-error: var(--color-red-11);
+  --color-text-warn: var(--color-orange-11);
+  --color-text-success: var(--color-green-11);
+  --color-text-info: var(--color-blue-11);
+  --color-text-tooltip: var(--color-grey-1);
+
+  /* Borders ---------------------------------------------------------------- */
+  --color-border-base: var(--color-alpha-grey-dark-2);
+  --color-border-strong: var(--color-grey-6);
+  --color-border-subtle: var(--color-alpha-grey-dark-1);
+  --color-border-focus: var(--color-purple-10);
+  --color-border-brand: var(--color-purple-10);
+  --color-border-error: var(--color-red-10);
+  --color-border-warn: var(--color-orange-12);
+  --color-border-success: var(--color-green-12);
+  --color-border-info: var(--color-blue-10);
+  --color-border-disabled: var(--color-alpha-white-1);
+
+  /* Fill ------------------------------------------------------------------- */
+  --color-fill-base: var(--color-grey-14);
+  --color-fill-muted: var(--color-grey-9);
+  --color-fill-brand: var(--color-purple-10);
+
+  /* Focus ------------------------------------------------------------------ */
+  --color-focus-ring: var(--color-border-focus);
+  --shadow-focus: 0 0 6px 0 var(--color-focus-ring);
+}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { auth, type UserSessionLifetime } from "#lib/auth.svelte.ts";
+  import { Avatar, Button } from "#lib/components/ui/index.ts";
   import { appVersion, versionLabel } from "#lib/version.ts";
 
   const SESSION_LABELS: Record<UserSessionLifetime, string> = {
@@ -45,78 +46,79 @@
   <title>Zinq • Profile</title>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-950 px-4 py-10 text-slate-100 sm:px-6">
+<div
+  class="min-h-screen bg-(--color-background-body) px-(--space-4) py-(--space-5) text-(--color-text-base) sm:px-(--space-3)"
+>
   <div class="mx-auto w-full max-w-3xl">
     {#if profile}
-      <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <header class="mb-(--space-3) flex flex-wrap items-center justify-between gap-(--space-2)">
         <div>
-          <h1 class="text-3xl font-semibold tracking-tight text-white">Профиль</h1>
-          <p class="mt-1 text-sm text-slate-400">Вы вошли в аккаунт Zinq</p>
+          <h1 class="text-(length:--font-size-2xl) font-semibold tracking-tight text-(--color-text-base)">Профиль</h1>
+          <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Вы вошли в аккаунт Zinq</p>
         </div>
 
-        <button
-          type="button"
-          class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-red-500/60 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={signingOut}
-          onclick={handleSignout}
-        >
+        <Button variant="secondary" disabled={signingOut} onclick={handleSignout}>
           {signingOut ? "Выходим…" : "Выйти"}
-        </button>
+        </Button>
       </header>
 
-      <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-black/20 sm:p-8">
-        <div class="flex items-center gap-4">
-          {#if profile.avatar}
-            <img
-              src={profile.avatar}
-              alt="Аватар {profile.display_name}"
-              class="h-16 w-16 rounded-full object-cover ring-2 ring-slate-800"
-            />
-          {:else}
-            <div
-              class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xl font-semibold text-slate-950"
-            >
-              {initials}
-            </div>
-          {/if}
+      <section
+        class="rounded-(--radius-2xl) border-(length:--border-width-default) border-(color:--color-border-base) bg-(--color-background-surface) p-(--space-2) shadow-(--shadow-elevation-3) sm:p-(--space-3)"
+      >
+        <div class="flex items-center gap-(--space-2)">
+          <Avatar src={profile.avatar} alt={`Аватар ${profile.display_name}`} fallback={initials} />
 
           <div class="min-w-0">
-            <p class="truncate text-lg font-semibold text-white">
+            <p class="truncate text-(length:--font-size-lg) font-semibold text-(--color-text-base)">
               {profile.display_name}
             </p>
-            <p class="truncate text-sm text-sky-400">@{profile.username}</p>
+            <p class="truncate text-(length:--font-size-sm) text-(--color-text-brand)">@{profile.username}</p>
           </div>
         </div>
 
-        <dl class="mt-8 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+        <dl class="mt-(--space-3) grid grid-cols-1 gap-x-(--space-3) gap-y-(--space-2) sm:grid-cols-2">
           <div>
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Отображаемое имя</dt>
-            <dd class="mt-1 text-sm text-slate-200">{profile.display_name}</dd>
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              Отображаемое имя
+            </dt>
+            <dd class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-base)">
+              {profile.display_name}
+            </dd>
           </div>
 
           <div>
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Имя пользователя</dt>
-            <dd class="mt-1 text-sm text-slate-200">@{profile.username}</dd>
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              Имя пользователя
+            </dt>
+            <dd class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-base)">@{profile.username}</dd>
           </div>
 
           <div>
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">ID</dt>
-            <dd class="mt-1 font-mono text-sm text-slate-400">{profile.id}</dd>
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              ID
+            </dt>
+            <dd class="mt-(--space-05) font-mono text-(length:--font-size-sm) text-(--color-text-muted)">
+              {profile.id}
+            </dd>
           </div>
 
           <div>
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Email</dt>
-            <dd class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-200">
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              Email
+            </dt>
+            <dd
+              class="mt-(--space-05) flex flex-wrap items-center gap-(--space-1) text-(length:--font-size-sm) text-(--color-text-base)"
+            >
               <span class="break-all">{profile.email}</span>
               {#if profile.email_verified}
                 <span
-                  class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400"
+                  class="rounded-(--radius-full) border-(length:--border-width-default) border-(color:--color-border-success) bg-(--color-background-success-subtle) px-(--space-1) py-(--space-05) text-(length:--font-size-xs) font-medium text-(--color-text-success)"
                 >
                   Подтверждён
                 </span>
               {:else}
                 <span
-                  class="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400"
+                  class="rounded-(--radius-full) border-(length:--border-width-default) border-(color:--color-border-warn) bg-(--color-background-warn-subtle) px-(--space-1) py-(--space-05) text-(length:--font-size-xs) font-medium text-(--color-text-warn)"
                 >
                   Не подтверждён
                 </span>
@@ -125,28 +127,34 @@
           </div>
 
           <div>
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Срок сессии</dt>
-            <dd class="mt-1 text-sm text-slate-200">{sessionLabel}</dd>
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              Срок сессии
+            </dt>
+            <dd class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-base)">{sessionLabel}</dd>
           </div>
 
           <div>
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Зарегистрирован</dt>
-            <dd class="mt-1 text-sm text-slate-200">{createdAt}</dd>
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              Зарегистрирован
+            </dt>
+            <dd class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-base)">{createdAt}</dd>
           </div>
 
           <div class="sm:col-span-2">
-            <dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">О себе</dt>
-            <dd class="mt-1 text-sm text-slate-200">
+            <dt class="text-(length:--font-size-xs) font-medium tracking-wide text-(--color-text-subtle) uppercase">
+              О себе
+            </dt>
+            <dd class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-base)">
               {profile.bio || "—"}
             </dd>
           </div>
         </dl>
       </section>
     {:else}
-      <p class="text-sm text-slate-400">Профиль недоступен.</p>
+      <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Профиль недоступен.</p>
     {/if}
 
-    <footer class="mt-10 text-center text-xs text-slate-500">
+    <footer class="mt-(--space-3) text-center text-(length:--font-size-xs) text-(--color-text-subtle)">
       {versionLabel} ({appVersion.commit})
     </footer>
   </div>

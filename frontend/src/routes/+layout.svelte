@@ -1,5 +1,5 @@
 <script lang="ts">
-  import "./layout.css";
+  import "#lib/styles/index.css";
   import AuthGuard from "#lib/components/AuthGuard.svelte";
   import type { LayoutProps } from "./$types";
 

@@ -1,0 +1,180 @@
+/* ==========================================================================
+   Component tokens
+   Component-first names. Every visual value used by a component lives here.
+   ========================================================================== */
+
+:root {
+  /* ===== Button ========================================================== */
+  --button-height: var(--size-button-default);
+  --button-height-small: var(--size-button-small);
+  --button-height-large: var(--size-button-large);
+  --button-padding-x: var(--space-1);
+  --button-padding-y: var(--space-05);
+  --button-radius: var(--radius-md);
+  --button-font-size: var(--font-size-sm);
+  --button-font-weight: var(--font-weight-semibold);
+  --button-gap: var(--space-05);
+  --button-icon-size: var(--size-icon-default);
+  --button-opacity-disabled: var(--opacity-disabled);
+  --button-background-primary: var(--color-background-brand);
+  --button-background-primary-hover: var(--color-background-brand-hover);
+  --button-background-primary-active: var(--color-background-brand-active);
+  --button-text-primary: var(--color-text-on-brand);
+  --button-background-secondary: var(--color-background-interactive);
+  --button-background-secondary-hover: var(--color-background-interactive-hover);
+  --button-background-secondary-active: var(--color-background-interactive-active);
+  --button-text-secondary: var(--color-text-base);
+  --button-background-icon: transparent;
+  --button-background-icon-hover: var(--color-background-interactive-hover);
+  --button-background-icon-active: var(--color-background-interactive-active);
+  --button-text-icon: var(--color-text-base);
+  --button-background-error: var(--color-background-error);
+  --button-background-error-hover: var(--color-background-error-hover);
+  --button-background-error-active: var(--color-background-error-active);
+  --button-text-error: var(--color-text-on-error);
+
+  /* ===== Input / Textarea ================================================ */
+  --input-height: var(--size-input-default);
+  --input-padding-x: var(--space-1);
+  --input-padding-y: var(--space-05);
+  --input-radius: var(--radius-md);
+  --input-border-width: var(--border-width-input);
+  --input-font-size: var(--font-size-sm);
+  --input-font-weight: var(--font-weight-normal);
+  --input-font-weight-placeholder: var(--font-weight-semibold);
+  --input-outline-width: var(--border-width-input-focus);
+  --input-opacity-disabled: var(--opacity-disabled);
+  --input-background: var(--color-background-surface-sunken);
+  --input-background-hover: var(--color-background-surface-hover);
+  --input-background-disabled: var(--color-background-disabled);
+  --input-border: var(--color-border-base);
+  --input-border-hover: var(--color-border-strong);
+  --input-border-focus: var(--color-border-focus);
+  --input-border-error: var(--color-border-error);
+  --input-border-disabled: var(--color-border-disabled);
+  --input-text: var(--color-text-base);
+  --input-text-placeholder: var(--color-text-placeholder);
+  --input-text-disabled: var(--color-text-disabled);
+  --input-fill: var(--color-fill-muted);
+  --textarea-min-height: 80px;
+  --textarea-resize: vertical;
+
+  /* ===== Switch ========================================================== */
+  --switch-width: var(--size-toggle-width);
+  --switch-height: var(--size-toggle-height);
+  --switch-radius: var(--radius-full);
+  --switch-border-width: var(--border-width-checkbox);
+  --switch-thumb-size: var(--size-toggle-handle);
+  --switch-thumb-offset: var(--size-toggle-offset);
+  --switch-thumb-offset-checked: calc(
+    var(--switch-width) - var(--switch-thumb-size) - var(--switch-thumb-offset) - 2 * var(--switch-border-width)
+  );
+  --switch-thumb-shadow: var(--shadow-elevation-1);
+  --switch-opacity-disabled: var(--opacity-disabled);
+  --switch-track-background: var(--color-background-control);
+  --switch-track-background-hover: var(--color-background-interactive-hover);
+  --switch-track-background-checked: var(--color-background-brand);
+  --switch-track-border: transparent;
+  --switch-track-border-checked: transparent;
+  --switch-thumb-background: var(--color-white);
+  --switch-thumb-background-checked: var(--color-white);
+
+  /* ===== Slider ========================================================== */
+  --slider-track-height: 6px;
+  --slider-thumb-size: var(--size-range-thumb);
+  --slider-thumb-shadow: var(--shadow-elevation-1);
+  --slider-radius: var(--radius-full);
+  --slider-border-width: var(--border-width-default);
+  --slider-opacity-disabled: var(--opacity-disabled);
+  --slider-track-background: var(--color-background-control);
+  --slider-range-background: var(--color-background-brand);
+  --slider-thumb-background: var(--color-white);
+  --slider-thumb-border: transparent;
+
+  /* ===== Avatar ========================================================== */
+  --avatar-size: 48px;
+  --avatar-radius: var(--radius-full);
+  --avatar-font-size: var(--font-size-xl);
+  --avatar-font-weight: var(--font-weight-medium);
+  --avatar-border-width: var(--border-width-default);
+  --avatar-background: var(--color-background-surface-raised);
+  --avatar-text: var(--color-text-muted);
+  --avatar-border: var(--color-border-base);
+
+  /* ===== Loader ========================================================== */
+  --loader-size-small: var(--size-spinner-small);
+  --loader-size-medium: var(--size-spinner-default);
+  --loader-size-large: var(--size-spinner-large);
+  --loader-border-width: var(--border-width-spinner);
+  --loader-duration: 800ms;
+  --loader-track-color: var(--color-border-base);
+  --loader-indicator-color: var(--color-border-brand);
+
+  /* ===== Tooltip ========================================================= */
+  --tooltip-padding-x: 6px;
+  --tooltip-padding-y: 4px;
+  --tooltip-radius: var(--radius-md);
+  --tooltip-font-size: var(--font-size-sm);
+  --tooltip-max-width: 300px;
+  --tooltip-duration: var(--duration-medium);
+  --tooltip-background: var(--color-background-tooltip);
+  --tooltip-text: var(--color-text-tooltip);
+  --tooltip-shadow: var(--shadow-elevation-2);
+  --tooltip-z-index: var(--z-balloon);
+
+  /* ===== Dialog ========================================================== */
+  --dialog-padding: var(--space-2);
+  --dialog-radius: var(--radius-xl);
+  --dialog-max-width: 390px;
+  --dialog-duration: var(--duration-medium);
+  --dialog-background: var(--color-background-surface-raised);
+  --dialog-text: var(--color-text-base);
+  --dialog-shadow: var(--shadow-elevation-4);
+  --dialog-z-index: var(--z-modal);
+  --dialog-overlay-background: var(--color-background-overlay);
+  --dialog-overlay-blur: 2px;
+  --dialog-overlay-z-index: var(--z-overlay);
+  --dialog-title-font-size: var(--font-size-md);
+  --dialog-title-font-weight: var(--font-weight-semibold);
+  --dialog-title-margin-bottom: 6px;
+  --dialog-close-offset: var(--space-1);
+  --dialog-nested-offset: 15px;
+  --dialog-nested-scale: 0.05;
+  --dialog-nested-blur: 2px;
+
+  /* ===== Menu (DropdownMenu + Select) ==================================== */
+  --menu-padding: var(--space-05);
+  --menu-radius: var(--radius-md);
+  --menu-min-width: 128px;
+  --menu-duration: var(--duration-medium);
+  --menu-item-padding-x: var(--space-1);
+  --menu-item-padding-y: var(--space-05);
+  --menu-item-radius: var(--radius-sm);
+  --menu-item-font-size: var(--font-size-sm);
+  --menu-item-gap: var(--space-1);
+  --menu-item-opacity-disabled: var(--opacity-disabled);
+  --menu-background: var(--color-background-surface-raised);
+  --menu-shadow: var(--shadow-popover);
+  --menu-z-index: var(--z-balloon);
+  --menu-item-background-hover: var(--color-background-interactive-hover);
+  --menu-item-text: var(--color-text-base);
+  --menu-item-text-disabled: var(--color-text-disabled);
+
+  /* ===== Select trigger ================================================== */
+  --select-trigger-height: var(--input-height);
+  --select-trigger-padding-x: var(--input-padding-x);
+  --select-trigger-padding-y: var(--input-padding-y);
+  --select-trigger-radius: var(--input-radius);
+  --select-trigger-font-size: var(--input-font-size);
+  --select-trigger-opacity-disabled: var(--opacity-disabled);
+  --select-trigger-background: var(--input-background);
+  --select-trigger-background-hover: var(--input-background-hover);
+  --select-trigger-background-disabled: var(--input-background-disabled);
+  --select-trigger-border: var(--input-border);
+  --select-trigger-border-hover: var(--input-border-hover);
+  --select-trigger-border-focus: var(--input-border-focus);
+  --select-trigger-border-open: var(--input-border-focus);
+  --select-trigger-text: var(--input-text);
+  --select-trigger-text-placeholder: var(--input-text-placeholder);
+  --select-trigger-fill: var(--input-fill);
+}
