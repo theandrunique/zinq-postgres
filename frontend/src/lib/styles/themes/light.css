@@ -23,6 +23,10 @@
   --color-background-control: var(--color-grey-11);
   --color-background-disabled: var(--color-grey-13);
   --tooltip-background: var(--color-grey-2);
+  --input-background: var(--color-grey-14);
+  --input-background-hover: var(--color-grey-13);
+  --input-background-focus: var(--input-background);
+  --input-background-disabled: var(--color-background-disabled);
 
   /* Brand ------------------------------------------------------------------ */
   --color-background-brand: var(--color-purple-7);
