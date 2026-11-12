@@ -3,7 +3,10 @@
    ========================================================================== */
 
 @layer base {
-  html,
+  html {
+    font-size: 100%;
+  }
+
   body {
     background-color: var(--color-background-body);
     color: var(--color-text-base);
