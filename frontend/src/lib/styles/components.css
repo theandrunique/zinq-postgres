@@ -140,12 +140,12 @@
 
   /* ===== Menu (DropdownMenu + Select) ==================================== */
   --menu-padding: var(--space-05);
-  --menu-radius: var(--radius-md);
+  --menu-radius: var(--radius-lg);
   --menu-min-width: 128px;
   --menu-duration: var(--duration-medium);
   --menu-item-padding-x: var(--space-1);
   --menu-item-padding-y: var(--space-05);
-  --menu-item-radius: var(--radius-sm);
+  --menu-item-radius: var(--radius-md);
   --menu-item-font-size: var(--font-size-sm);
   --menu-item-gap: var(--space-1);
   --menu-item-opacity-disabled: var(--opacity-disabled);
