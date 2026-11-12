@@ -113,12 +113,12 @@
   /* ===== Tooltip ========================================================= */
   --tooltip-padding-x: 6px;
   --tooltip-padding-y: 4px;
-  --tooltip-radius: var(--radius-md);
+  --tooltip-radius: var(--radius-lg);
   --tooltip-font-size: var(--font-size-sm);
-  --tooltip-max-width: 300px;
+  --tooltip-font-weight: var(--font-weight-semibold);
+  --tooltip-line-height: 1.4;
+  --tooltip-max-width: 320px;
   --tooltip-duration: var(--duration-medium);
-  --tooltip-background: var(--color-background-tooltip);
-  --tooltip-text: var(--color-text-tooltip);
   --tooltip-shadow: var(--shadow-elevation-2);
   --tooltip-z-index: var(--z-balloon);
 

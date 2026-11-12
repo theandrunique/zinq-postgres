@@ -1,6 +1,7 @@
 /* ==========================================================================
    Theme: dark (default)
-   Semantic roles. Only this layer should change between themes.
+   Theme-dependent tokens: global semantic roles and component-specific values.
+   Only this layer should change between themes.
    ========================================================================== */
 
 :root {
@@ -22,7 +23,7 @@
   --color-background-interactive-active: var(--color-alpha-grey-dark-3);
   --color-background-control: var(--color-alpha-grey-light-2);
   --color-background-disabled: var(--color-alpha-grey-dark-1);
-  --color-background-tooltip: var(--color-grey-15);
+  --tooltip-background: var(--color-grey-15);
 
   /* Brand ------------------------------------------------------------------ */
   --color-background-brand: var(--color-purple-9);
@@ -60,7 +61,7 @@
   --color-text-warn: var(--color-orange-11);
   --color-text-success: var(--color-green-11);
   --color-text-info: var(--color-blue-11);
-  --color-text-tooltip: var(--color-grey-1);
+  --tooltip-text-color: var(--color-grey-1);
 
   /* Borders ---------------------------------------------------------------- */
   --color-border-base: var(--color-alpha-grey-dark-2);

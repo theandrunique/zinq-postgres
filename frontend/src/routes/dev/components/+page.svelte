@@ -622,19 +622,57 @@
       <section id="tooltip" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Tooltip</h2>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Подсказка на hover и focus.
+          Стороны и контентные подсказки.
         </p>
 
-        <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
+        <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2 lg:grid-cols-3">
+          {#snippet sideTrigger()}
+            <Button variant="secondary">Наведи</Button>
+          {/snippet}
+
+          {#snippet topContent()}
+            <span>Сверху</span>
+          {/snippet}
+          {#snippet rightContent()}
+            <span>Справа</span>
+          {/snippet}
+          {#snippet bottomContent()}
+            <span>Снизу</span>
+          {/snippet}
+          {#snippet leftContent()}
+            <span>Слева</span>
+          {/snippet}
+
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>hover / focus</p>
-            {#snippet tooltipTrigger()}
-              <Button variant="secondary">Наведи или сфокусируй</Button>
-            {/snippet}
-            {#snippet tooltipContent()}
-              <span>Подсказка, стилизованная токенами</span>
-            {/snippet}
-            <Tooltip trigger={tooltipTrigger} content={tooltipContent} />
+            <p class={demoLabelClass}>side="top"</p>
+            <Tooltip trigger={sideTrigger} content={topContent} contentProps={{ side: "top" }} />
+          </div>
+          <div class={demoCardClass}>
+            <p class={demoLabelClass}>side="right"</p>
+            <Tooltip trigger={sideTrigger} content={rightContent} contentProps={{ side: "right" }} />
+          </div>
+          <div class={demoCardClass}>
+            <p class={demoLabelClass}>side="bottom"</p>
+            <Tooltip trigger={sideTrigger} content={bottomContent} contentProps={{ side: "bottom" }} />
+          </div>
+          <div class={demoCardClass}>
+            <p class={demoLabelClass}>side="left"</p>
+            <Tooltip trigger={sideTrigger} content={leftContent} contentProps={{ side: "left" }} />
+          </div>
+
+          {#snippet longTrigger()}
+            <Button variant="secondary">Длинный текст</Button>
+          {/snippet}
+          {#snippet longContent()}
+            <span>
+              Это длинная подсказка с несколькими строками текста. Она ограничена по ширине и переносится, чтобы
+              оставаться читаемой даже при большом объёме контента.
+            </span>
+          {/snippet}
+
+          <div class={demoCardClass}>
+            <p class={demoLabelClass}>длинный текст</p>
+            <Tooltip trigger={longTrigger} content={longContent} />
           </div>
         </div>
       </section>
