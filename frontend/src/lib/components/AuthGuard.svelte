@@ -55,7 +55,7 @@
     if (!auth.user && !isPublic) {
       void goto(resolve("/login"));
     } else if (auth.user && !auth.user.expired && isPublic) {
-      void goto(resolve("/"));
+      void goto(resolve("/chats"));
     }
   });
 

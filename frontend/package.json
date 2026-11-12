@@ -36,15 +36,24 @@
     },
     "dependencies": {
         "@lucide/svelte": "^1.70.0",
+        "@tanstack/svelte-query": "^6.4.1",
+        "axios": "^1.21.1",
         "bits-ui": "^2.20.6",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "socket.io-client": "^4.8.4",
         "tailwind-merge": "^3.7.0"
     },
     "imports": {
         "#lib": "./src/lib/index.ts",
         "#lib/components/ui": "./src/lib/components/ui/index.ts",
+        "#lib/components/MediaGrid": "./src/lib/components/MediaGrid/index.ts",
         "#lib/utils": "./src/lib/utils/index.ts",
+        "#lib/types": "./src/lib/types/index.ts",
+        "#lib/api/*": "./src/lib/api/*.ts",
+        "#lib/utils/*": "./src/lib/utils/*.ts",
+        "#lib/services/*": "./src/lib/services/*.ts",
+        "#lib/state/*": "./src/lib/state/*.ts",
         "#features": "./src/features/*",
         "#services": "./src/services/*",
         "#lib/*": "./src/lib/*"

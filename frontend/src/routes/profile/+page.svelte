@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import { auth, type UserSessionLifetime } from "#lib/auth.svelte.ts";
   import { Avatar, Button } from "#lib/components/ui/index.ts";
   import { appVersion, versionLabel } from "#lib/version.ts";
@@ -57,9 +58,17 @@
           <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Вы вошли в аккаунт Zinq</p>
         </div>
 
-        <Button variant="secondary" disabled={signingOut} onclick={handleSignout}>
-          {signingOut ? "Выходим…" : "Выйти"}
-        </Button>
+        <div class="flex items-center gap-(--space-1)">
+          <a
+            href={resolve("/chats")}
+            class="rounded-(--button-radius) px-(--button-padding-x) py-(--button-padding-y) text-(length:--font-size-sm) font-medium text-(--color-text-link) hover:text-(--color-text-link-hover)"
+          >
+            К чатам
+          </a>
+          <Button variant="secondary" disabled={signingOut} onclick={handleSignout}>
+            {signingOut ? "Выходим…" : "Выйти"}
+          </Button>
+        </div>
       </header>
 
       <section
