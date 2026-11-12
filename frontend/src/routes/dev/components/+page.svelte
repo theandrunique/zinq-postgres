@@ -434,7 +434,7 @@
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>default</p>
+            <p class={demoLabelClass}>default / hover / focus</p>
             <Input placeholder="Введите имя" />
           </div>
           <div class={demoCardClass}>
@@ -460,7 +460,7 @@
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>default</p>
+            <p class={demoLabelClass}>default / hover / focus</p>
             <Textarea placeholder="Расскажите о себе" />
           </div>
           <div class={demoCardClass}>

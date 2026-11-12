@@ -37,16 +37,13 @@
   --input-height: var(--size-input-default);
   --input-padding-x: var(--space-1);
   --input-padding-y: var(--space-05);
-  --input-radius: var(--radius-md);
+  --input-radius: var(--radius-lg);
   --input-border-width: var(--border-width-input);
   --input-font-size: var(--font-size-sm);
   --input-font-weight: var(--font-weight-normal);
   --input-font-weight-placeholder: var(--font-weight-semibold);
   --input-outline-width: var(--border-width-input-focus);
   --input-opacity-disabled: var(--opacity-disabled);
-  --input-background: var(--color-background-surface-sunken);
-  --input-background-hover: var(--color-background-surface-hover);
-  --input-background-disabled: var(--color-background-disabled);
   --input-border: var(--color-border-base);
   --input-border-hover: var(--color-border-strong);
   --input-border-focus: var(--color-border-focus);
@@ -57,7 +54,6 @@
   --input-text-disabled: var(--color-text-disabled);
   --input-fill: var(--color-fill-muted);
   --textarea-min-height: 80px;
-  --textarea-resize: vertical;
 
   /* ===== Switch ========================================================== */
   --switch-width: var(--size-toggle-width);
@@ -169,6 +165,7 @@
   --select-trigger-opacity-disabled: var(--opacity-disabled);
   --select-trigger-background: var(--input-background);
   --select-trigger-background-hover: var(--input-background-hover);
+  --select-trigger-background-focus: var(--input-background-focus);
   --select-trigger-background-disabled: var(--input-background-disabled);
   --select-trigger-border: var(--input-border);
   --select-trigger-border-hover: var(--input-border-hover);
