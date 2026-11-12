@@ -1,5 +1,6 @@
 use std::{fs, sync::Arc};
 
+use chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres, query};
 
 use crate::{
@@ -39,7 +40,7 @@ use crate::{
             user_repository::PostgresUserRepository,
             user_session_repository::PostgresUserSessionRepository,
         },
-        id_generator::SnowflakeIdGenerator,
+        id_generator::{IdGenerator, SnowflakeIdGenerator},
         s3::AwsS3Service,
         smtp_client::SmtpService,
     },
@@ -52,6 +53,7 @@ use crate::{
 
 pub struct TestContext {
     pub app_state: AppState,
+    pub pool: Pool<Postgres>,
 }
 
 impl TestContext {
@@ -137,7 +139,10 @@ impl TestContext {
 
         state.register_mediator_handlers().await;
 
-        Self { app_state: state }
+        Self {
+            app_state: state,
+            pool,
+        }
     }
 
     async fn setup_database(pool: Pool<Postgres>, database: &str) {
@@ -231,5 +236,58 @@ impl TestContext {
             .handle(cmd)
             .await
             .expect("Failed to create message")
+    }
+
+    /// Inserts a message with an explicit `created_at` so ordering tests are
+    /// deterministic. The trigger updates `chats.last_message_*` as usual.
+    pub async fn create_message_at(
+        &self,
+        chat_id: i64,
+        author_id: i64,
+        content: &str,
+        created_at: DateTime<Utc>,
+    ) -> i64 {
+        let message_id = self.app_state.id_gen.gen_id().await;
+
+        query(
+            "INSERT INTO messages (id, chat_id, author_id, content, message_type, created_at)
+             VALUES ($1, $2, $3, $4, $5::jsonb, $6)",
+        )
+        .bind(message_id)
+        .bind(chat_id)
+        .bind(author_id)
+        .bind(content)
+        .bind(r#"{"type":"default"}"#)
+        .bind(created_at)
+        .execute(&self.pool)
+        .await
+        .expect("Failed to create message at given time");
+
+        message_id
+    }
+
+    /// Removes all messages of a chat and resets its denormalized
+    /// `last_message_*` columns, making it a chat without messages.
+    pub async fn clear_chat_messages(&self, chat_id: i64) {
+        query("DELETE FROM messages WHERE chat_id = $1")
+            .bind(chat_id)
+            .execute(&self.pool)
+            .await
+            .expect("Failed to delete chat messages");
+
+        query(
+            "UPDATE chats
+             SET last_message_id = NULL,
+                 last_message_content = NULL,
+                 last_message_type = NULL,
+                 last_message_author_id = NULL,
+                 last_message_created_at = NULL,
+                 last_message_edited_at = NULL
+             WHERE id = $1",
+        )
+        .bind(chat_id)
+        .execute(&self.pool)
+        .await
+        .expect("Failed to reset chat last message");
     }
 }

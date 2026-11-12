@@ -1,6 +1,28 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 
 use crate::domain::chats::{Chat, ChatMember};
+
+/// Opaque position inside the user's chat list.
+///
+/// Chats are ordered by `last_message_created_at DESC NULLS LAST, id DESC`,
+/// so the cursor has to remember which group the last returned chat belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChatPageCursor {
+    /// Last returned chat had at least one message.
+    Dated {
+        last_message_at: DateTime<Utc>,
+        chat_id: i64,
+    },
+    /// Last returned chat had no messages and lives in the tail of the list.
+    WithoutMessages { chat_id: i64 },
+}
+
+#[derive(Debug, Default)]
+pub struct UserChatsPage {
+    pub chats: Vec<Chat>,
+    pub next_cursor: Option<ChatPageCursor>,
+}
 
 #[async_trait]
 pub trait ChatRepository: Send + Sync {
@@ -31,5 +53,10 @@ pub trait ChatRepository: Send + Sync {
         user_id2: i64,
     ) -> Result<Option<Chat>, anyhow::Error>;
 
-    async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error>;
+    async fn get_user_chats(
+        &self,
+        user_id: i64,
+        after: Option<ChatPageCursor>,
+        limit: i32,
+    ) -> Result<UserChatsPage, anyhow::Error>;
 }
