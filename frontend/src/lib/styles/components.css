@@ -68,6 +68,7 @@
   --switch-track-background: var(--color-background-control);
   --switch-track-background-hover: var(--color-background-interactive-hover);
   --switch-track-background-checked: var(--color-background-brand);
+  --switch-track-background-checked-hover: var(--color-purple-10);
   --switch-track-border: transparent;
   --switch-track-border-checked: transparent;
   --switch-thumb-background: var(--color-white);

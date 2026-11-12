@@ -13,6 +13,7 @@
       "enabled:hover:bg-(--switch-track-background-hover)",
       "data-[state=checked]:border-(color:--switch-track-border-checked)",
       "data-[state=checked]:bg-(--switch-track-background-checked)",
+      "data-[state=checked]:enabled:hover:bg-(--switch-track-background-checked-hover)",
       "focus-visible:focus-ring",
       "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-(--switch-opacity-disabled)",
       className,
