@@ -1,6 +1,6 @@
 /* ==========================================================================
    Theme: light (example)
-   Only the semantic layer is overridden.
+   Theme-dependent tokens. Only this layer changes between themes.
    ========================================================================== */
 
 [data-theme="light"] {
@@ -22,7 +22,7 @@
   --color-background-interactive-active: var(--color-grey-12);
   --color-background-control: var(--color-grey-11);
   --color-background-disabled: var(--color-grey-13);
-  --color-background-tooltip: var(--color-grey-2);
+  --tooltip-background: var(--color-grey-2);
 
   /* Brand ------------------------------------------------------------------ */
   --color-background-brand: var(--color-purple-7);
@@ -60,7 +60,7 @@
   --color-text-warn: var(--color-orange-9);
   --color-text-success: var(--color-green-9);
   --color-text-info: var(--color-blue-9);
-  --color-text-tooltip: var(--color-white);
+  --tooltip-text-color: var(--color-white);
 
   /* Borders ---------------------------------------------------------------- */
   --color-border-base: var(--color-grey-10);

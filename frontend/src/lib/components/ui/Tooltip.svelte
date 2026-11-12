@@ -7,32 +7,31 @@
     trigger: Snippet;
     content: Snippet;
     triggerProps?: Tooltip.TriggerProps;
+    contentProps?: Tooltip.ContentProps;
   };
 
-  let { trigger, content, triggerProps, ...rest }: Props = $props();
+  let { trigger, content, triggerProps, contentProps, ...rest }: Props = $props();
+
+  let contentClasses = $derived(
+    cn(
+      "tooltip z-(--tooltip-z-index) max-w-(--tooltip-max-width) overflow-hidden break-words",
+      "rounded-(--tooltip-radius) px-(--tooltip-padding-x) py-(--tooltip-padding-y)",
+      "bg-(--tooltip-background) text-(length:--tooltip-font-size) font-(weight:--tooltip-font-weight) leading-(--tooltip-line-height) text-(--tooltip-text-color) shadow-(--tooltip-shadow)",
+      contentProps?.class,
+    ),
+  );
 </script>
 
-<Tooltip.Provider>
-  <Tooltip.Root {...rest}>
-    <Tooltip.Trigger {...triggerProps}>
-      {@render trigger()}
-    </Tooltip.Trigger>
-    <Tooltip.Portal>
-      <Tooltip.Content
-        side="top"
-        class={cn(
-          "tooltip z-(--tooltip-z-index) max-w-(--tooltip-max-width) overflow-hidden",
-          "rounded-(--tooltip-radius) px-(--tooltip-padding-x) py-(--tooltip-padding-y)",
-          "bg-(--tooltip-background) text-(length:--tooltip-font-size) text-(--tooltip-text) shadow-(--tooltip-shadow)",
-        )}
-        sideOffset={8}
-        collisionPadding={8}
-      >
-        {@render content()}
-      </Tooltip.Content>
-    </Tooltip.Portal>
-  </Tooltip.Root>
-</Tooltip.Provider>
+<Tooltip.Root {...rest}>
+  <Tooltip.Trigger {...triggerProps}>
+    {@render trigger()}
+  </Tooltip.Trigger>
+  <Tooltip.Portal>
+    <Tooltip.Content side="top" sideOffset={8} collisionPadding={8} {...contentProps} class={contentClasses}>
+      {@render content()}
+    </Tooltip.Content>
+  </Tooltip.Portal>
+</Tooltip.Root>
 
 <style>
   :global(.tooltip) {
