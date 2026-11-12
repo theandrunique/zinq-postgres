@@ -26,7 +26,7 @@
 
 <Avatar.Root delayMs={200} class={rootClasses} {...rest}>
   <div class="flex h-full w-full items-center justify-center overflow-hidden rounded-(--avatar-radius)">
-    <Avatar.Image {src} {alt} />
+    <Avatar.Image {src} {alt} class="h-full w-full object-cover" />
     <Avatar.Fallback>
       {fallback}
     </Avatar.Fallback>

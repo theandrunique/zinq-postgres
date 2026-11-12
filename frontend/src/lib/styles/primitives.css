@@ -1,7 +1,8 @@
 /* ==========================================================================
    Primitives
-   Theme-independent scales. Values are based on Twitch's design tokens,
-   normalized from a 10px rem base to px. Do not use these in components.
+   Theme-independent scales. Values are based on Twitch's design tokens.
+   Layout, spacing and typography values use rem (1rem = 16px); hairline
+   and effect tokens stay in px. Do not use these in components.
    ========================================================================== */
 
 :root {
@@ -240,26 +241,26 @@
 
   /* Space ------------------------------------------------------------------ */
   --space-0: 0;
-  --space-05: 5px;
-  --space-1: 10px;
-  --space-2: 20px;
-  --space-3: 30px;
-  --space-4: 40px;
-  --space-5: 50px;
-  --space-6: 60px;
-  --space-7: 70px;
-  --space-8: 80px;
-  --space-9: 90px;
-  --space-10: 100px;
+  --space-05: 0.3125rem;
+  --space-1: 0.625rem;
+  --space-2: 1.25rem;
+  --space-3: 1.875rem;
+  --space-4: 2.5rem;
+  --space-5: 3.125rem;
+  --space-6: 3.75rem;
+  --space-7: 4.375rem;
+  --space-8: 5rem;
+  --space-9: 5.625rem;
+  --space-10: 6.25rem;
   --space-auto: auto;
 
   /* Radius ----------------------------------------------------------------- */
   --radius-none: 0;
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
-  --radius-xl: 10px;
-  --radius-2xl: 16px;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 1rem;
   --radius-full: 9000px;
 
   /* Border width ----------------------------------------------------------- */
@@ -279,39 +280,31 @@
 
   --line-height-body: 1.5;
 
-  --font-size-xs: 12px;
-  --font-size-sm: 13px;
-  --font-size-md: 14px;
-  --font-size-lg: 18px;
-  --font-size-xl: 24px;
-  --font-size-2xl: 36px;
-  --font-size-3xl: 54px;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-md: 0.875rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2.25rem;
+  --font-size-3xl: 3.375rem;
 
   /* Component size primitives ---------------------------------------------- */
-  --size-button-small: 24px;
-  --size-button-default: 30px;
-  --size-button-large: 36px;
+  --size-button-default: 1.875rem;
 
-  --size-icon-small: 16px;
-  --size-icon-default: 20px;
-  --size-icon-large: 24px;
+  --size-icon-default: 1.25rem;
 
-  --size-input-small: 24px;
-  --size-input-default: 30px;
-  --size-input-large: 36px;
+  --size-input-default: 1.875rem;
 
-  --size-checkbox: 16px;
-  --size-spinner-small: 16px;
-  --size-spinner-default: 22px;
-  --size-spinner-large: 28px;
+  --size-spinner-small: 1rem;
+  --size-spinner-default: 1.375rem;
+  --size-spinner-large: 1.75rem;
 
-  --size-range: 2px;
-  --size-range-thumb: 16px;
+  --size-range-thumb: 1rem;
 
-  --size-toggle-height: 20px;
-  --size-toggle-width: 35px;
-  --size-toggle-handle: 12px;
-  --size-toggle-offset: 2px;
+  --size-toggle-height: 1.25rem;
+  --size-toggle-width: 2.1875rem;
+  --size-toggle-handle: 0.75rem;
+  --size-toggle-offset: 0.125rem;
 
   /* Elevation -------------------------------------------------------------- */
   --shadow-elevation-1: 0 1px 2px var(--color-alpha-black-14), 0 0 2px var(--color-alpha-black-14);
