@@ -2,7 +2,6 @@
 
 @import "./primitives.css";
 @import "./themes/dark.css";
-@import "./themes/light.css";
 @import "./components.css";
 @import "./animations.css";
 @import "./utilities.css";

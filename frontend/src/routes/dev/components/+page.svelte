@@ -130,23 +130,13 @@
   const demoLabelClass = "mb-(--space-1) font-mono text-(length:--font-size-xs) text-(--color-text-muted)";
   const fieldLabelClass = "mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)";
 
-  let theme = $state<"dark" | "light">("dark");
   let computed = $state<Record<string, string>>({});
 
   $effect(() => {
-    if (theme === "light") document.documentElement.dataset.theme = "light";
-    else delete document.documentElement.dataset.theme;
-
     const root = getComputedStyle(document.documentElement);
     const next: Record<string, string> = {};
     for (const token of allTokens) next[token] = root.getPropertyValue(token).trim();
     computed = next;
-  });
-
-  $effect(() => {
-    return () => {
-      delete document.documentElement.dataset.theme;
-    };
   });
 
   function contrastColor(value: string): string {
@@ -204,20 +194,6 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-(--space-1)">
-        <Button
-          variant={theme === "dark" ? "primary" : "secondary"}
-          aria-pressed={theme === "dark"}
-          onclick={() => (theme = "dark")}
-        >
-          Тёмная
-        </Button>
-        <Button
-          variant={theme === "light" ? "primary" : "secondary"}
-          aria-pressed={theme === "light"}
-          onclick={() => (theme = "light")}
-        >
-          Светлая
-        </Button>
         <a
           href={resolve("/")}
           class="rounded-(--button-radius) px-(--button-padding-x) py-(--button-padding-y) text-(length:--font-size-sm) font-medium text-(--color-text-link) hover:text-(--color-text-link-hover)"

@@ -10,7 +10,7 @@
       "h-(--switch-height) w-(--switch-width) rounded-(--switch-radius)",
       "border-(length:--switch-border-width) border-(color:--switch-track-border)",
       "bg-(--switch-track-background) transition-colors duration-(--duration-fast)",
-      "hover:bg-(--switch-track-background-hover)",
+      "enabled:hover:bg-(--switch-track-background-hover)",
       "data-[state=checked]:border-(color:--switch-track-border-checked)",
       "data-[state=checked]:bg-(--switch-track-background-checked)",
       "focus-visible:focus-ring",

@@ -6,11 +6,9 @@
 :root {
   /* ===== Button ========================================================== */
   --button-height: var(--size-button-default);
-  --button-height-small: var(--size-button-small);
-  --button-height-large: var(--size-button-large);
   --button-padding-x: var(--space-1);
   --button-padding-y: var(--space-05);
-  --button-radius: var(--radius-md);
+  --button-radius: var(--radius-lg);
   --button-font-size: var(--font-size-sm);
   --button-font-weight: var(--font-weight-semibold);
   --button-gap: var(--space-05);
@@ -53,7 +51,7 @@
   --input-text-placeholder: var(--color-text-placeholder);
   --input-text-disabled: var(--color-text-disabled);
   --input-fill: var(--color-fill-muted);
-  --textarea-min-height: 80px;
+  --textarea-min-height: 5rem;
 
   /* ===== Switch ========================================================== */
   --switch-width: var(--size-toggle-width);
@@ -76,7 +74,7 @@
   --switch-thumb-background-checked: var(--color-white);
 
   /* ===== Slider ========================================================== */
-  --slider-track-height: 6px;
+  --slider-track-height: 0.375rem;
   --slider-thumb-size: var(--size-range-thumb);
   --slider-thumb-shadow: var(--shadow-elevation-1);
   --slider-radius: var(--radius-full);
@@ -88,7 +86,7 @@
   --slider-thumb-border: transparent;
 
   /* ===== Avatar ========================================================== */
-  --avatar-size: 48px;
+  --avatar-size: 3rem;
   --avatar-radius: var(--radius-full);
   --avatar-font-size: var(--font-size-xl);
   --avatar-font-weight: var(--font-weight-medium);
@@ -107,13 +105,13 @@
   --loader-indicator-color: var(--color-border-brand);
 
   /* ===== Tooltip ========================================================= */
-  --tooltip-padding-x: 6px;
-  --tooltip-padding-y: 4px;
+  --tooltip-padding-x: 0.375rem;
+  --tooltip-padding-y: 0.25rem;
   --tooltip-radius: var(--radius-lg);
   --tooltip-font-size: var(--font-size-sm);
   --tooltip-font-weight: var(--font-weight-semibold);
   --tooltip-line-height: 1.4;
-  --tooltip-max-width: 320px;
+  --tooltip-max-width: 20rem;
   --tooltip-duration: var(--duration-medium);
   --tooltip-shadow: var(--shadow-elevation-2);
   --tooltip-z-index: var(--z-balloon);
@@ -121,7 +119,7 @@
   /* ===== Dialog ========================================================== */
   --dialog-padding: var(--space-2);
   --dialog-radius: var(--radius-xl);
-  --dialog-max-width: 390px;
+  --dialog-max-width: 24.375rem;
   --dialog-duration: var(--duration-medium);
   --dialog-background: var(--color-background-surface-raised);
   --dialog-text: var(--color-text-base);
@@ -132,16 +130,16 @@
   --dialog-overlay-z-index: var(--z-overlay);
   --dialog-title-font-size: var(--font-size-md);
   --dialog-title-font-weight: var(--font-weight-semibold);
-  --dialog-title-margin-bottom: 6px;
+  --dialog-title-margin-bottom: 0.375rem;
   --dialog-close-offset: var(--space-1);
-  --dialog-nested-offset: 15px;
+  --dialog-nested-offset: 0.9375rem;
   --dialog-nested-scale: 0.05;
   --dialog-nested-blur: 2px;
 
   /* ===== Menu (DropdownMenu + Select) ==================================== */
   --menu-padding: var(--space-05);
   --menu-radius: var(--radius-lg);
-  --menu-min-width: 128px;
+  --menu-min-width: 8rem;
   --menu-duration: var(--duration-medium);
   --menu-item-padding-x: var(--space-1);
   --menu-item-padding-y: var(--space-05);
