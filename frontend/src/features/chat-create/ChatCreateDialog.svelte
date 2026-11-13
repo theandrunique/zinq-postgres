@@ -5,12 +5,7 @@
   import { chatKeys } from "#lib/api/query-keys";
   import { ApiError } from "#lib/api/client";
   import { auth } from "#lib/auth.svelte.ts";
-
-  interface Props {
-    open?: boolean;
-  }
-
-  let { open = $bindable(false) }: Props = $props();
+  import { chatCreateModal } from "../../services/messenger/chatCreateModal.svelte";
 
   const queryClient = useQueryClient();
   const currentUserId = $derived(auth.user?.profile.id ?? "");
@@ -71,7 +66,7 @@
 
     try {
       await mutation.mutateAsync({ name: trimmedName, members });
-      open = false;
+      chatCreateModal.close();
       reset();
     } catch (cause) {
       error = cause instanceof ApiError ? cause.message : "Не удалось создать чат";
@@ -79,7 +74,10 @@
   }
 </script>
 
-<Dialog.Root bind:open onOpenChange={(value) => !value && reset()}>
+<Dialog.Root
+  bind:open={() => chatCreateModal.isOpen, () => chatCreateModal.close()}
+  onOpenChange={(value) => !value && reset()}
+>
   <Dialog.Portal>
     <Dialog.Overlay />
     <Dialog.Content>
@@ -124,7 +122,7 @@
         {/if}
 
         <div class="mt-(--space-1) flex justify-end gap-(--space-1)">
-          <Button type="button" variant="secondary" onclick={() => (open = false)}>Отмена</Button>
+          <Button type="button" variant="secondary" onclick={() => chatCreateModal.close()}>Отмена</Button>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? "Создаём…" : "Создать"}
           </Button>

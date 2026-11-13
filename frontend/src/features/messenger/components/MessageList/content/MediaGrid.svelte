@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Attachment } from "#lib/types";
   import { getAttachmentUrl } from "#lib/utils";
-  import { MediaGrid, type ImageMeta } from "#lib/components/MediaGrid";
+  import { MediaGrid, type ImageMeta } from "../../MediaGrid";
 
   interface Props {
     attachments: Attachment[];

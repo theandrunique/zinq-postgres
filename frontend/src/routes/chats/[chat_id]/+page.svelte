@@ -3,9 +3,6 @@
   import { page } from "$app/state";
   import { MessageCircle } from "@lucide/svelte";
   import { Button, Loader } from "#lib/components/ui";
-  import ChatHeader from "#lib/components/ChatHeader.svelte";
-  import MessageComposer from "#lib/components/MessageComposer.svelte";
-  import MessageList from "#lib/components/MessageList/MessageList.svelte";
   import { appendMessage, updateLastMessage } from "#lib/api/cache";
   import { ApiError } from "#lib/api/client";
   import { getChat, sendMessage } from "#lib/api/chats";
@@ -15,6 +12,7 @@
   import { acknowledgeChat } from "#lib/services/socket.svelte";
   import { chatSession } from "#lib/state/chat-session.svelte";
   import { getChatDisplayName, normalizeMessages } from "#lib/utils";
+  import { ChatHeader, MessageComposer, MessageList } from "#features/messenger";
 
   const queryClient = useQueryClient();
 

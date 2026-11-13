@@ -5,11 +5,11 @@
   import { page } from "$app/state";
   import { Plus, Users } from "@lucide/svelte";
   import { Avatar, Button, DropdownMenu, Loader } from "#lib/components/ui";
-  import ChatListItem from "#lib/components/ChatListItem.svelte";
-  import ChatCreateDialog from "#lib/components/ChatCreateDialog.svelte";
   import { chatsQueryOptions } from "#lib/api/queries";
   import { auth } from "#lib/auth.svelte.ts";
   import { cn } from "#lib/utils";
+  import ChatListItem from "./ChatListItem.svelte";
+  import { chatCreateModal } from "../../services/messenger/chatCreateModal.svelte";
 
   interface Props {
     class?: string;
@@ -33,7 +33,6 @@
   const chats = $derived(chatsQuery.data ?? []);
   const activeChatId = $derived(page.params.chat_id ?? null);
 
-  let createDialogOpen = $state(false);
   let sentinel = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
@@ -63,12 +62,12 @@
 
 <aside
   class={cn(
-    "relative h-full w-full shrink-0 flex-col border-r border-(color:--color-border-base) bg-(--color-background-surface) md:flex md:w-80",
+    "relative h-full w-full shrink-0 flex-col border-r border-(--color-border-base) bg-(--color-background-surface) md:flex md:w-80",
     className,
   )}
 >
   <header
-    class="flex shrink-0 items-center justify-between gap-(--space-1) border-b border-(color:--color-border-base) px-(--space-2) py-(--space-1)"
+    class="flex shrink-0 items-center justify-between gap-(--space-1) border-b border-(--color-border-base) px-(--space-2) py-(--space-1)"
   >
     <h1 class="text-(length:--font-size-lg) font-semibold">Чаты</h1>
 
@@ -129,13 +128,9 @@
   </div>
 
   <Button
-    type="button"
-    aria-label="Создать чат"
     class="absolute right-(--space-2) bottom-(--space-2) h-12 w-12 rounded-(--radius-full) shadow-(--shadow-elevation-3)"
-    onclick={() => (createDialogOpen = true)}
+    onclick={() => chatCreateModal.open()}
   >
-    <Plus class="h-6 w-6" />
+    <Plus class="size-6" />
   </Button>
-
-  <ChatCreateDialog bind:open={createDialogOpen} />
 </aside>

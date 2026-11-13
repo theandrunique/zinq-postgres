@@ -3,9 +3,9 @@
   import { Tooltip } from "bits-ui";
   import "#lib/styles/index.css";
   import AuthGuard from "#lib/components/AuthGuard.svelte";
-  import { queryClient } from "#lib/api/query-client";
   import { auth } from "#lib/auth.svelte.ts";
   import type { LayoutProps } from "./$types";
+  import { queryClient } from "#lib/queries/query-client.ts";
 
   let { children }: LayoutProps = $props();
 

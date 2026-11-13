@@ -55,6 +55,8 @@
         "#lib/services/*": "./src/lib/services/*.ts",
         "#lib/state/*": "./src/lib/state/*.ts",
         "#features": "./src/features/*",
+        "#features/messenger": "./src/features/messenger/index.ts",
+        "#features/chat-create": "./src/features/chat-create/index.ts",
         "#services": "./src/services/*",
         "#lib/*": "./src/lib/*"
     }

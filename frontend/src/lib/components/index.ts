@@ -1,10 +1,2 @@
 export * from "./ui/index.ts";
-export * from "./ChatCard/index.ts";
-export * from "./MediaGrid/index.ts";
-export * from "./MessageList/index.ts";
-export { default as ChatCreateDialog } from "./ChatCreateDialog.svelte";
-export { default as ChatHeader } from "./ChatHeader.svelte";
-export { default as ChatListItem } from "./ChatListItem.svelte";
-export { default as ChatSidebar } from "./ChatSidebar.svelte";
-export { default as MessageComposer } from "./MessageComposer.svelte";
 export { default as AuthGuard } from "./AuthGuard.svelte";

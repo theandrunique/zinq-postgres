@@ -13,7 +13,7 @@ import {
   updateLastMessage,
   upsertChat,
 } from "#lib/api/cache";
-import { queryClient } from "#lib/api/query-client";
+import { queryClient } from "#lib/queries/query-client.ts";
 import { chatKeys } from "#lib/api/query-keys";
 import { auth } from "#lib/auth.svelte.ts";
 import { compareIds } from "#lib/utils/id";

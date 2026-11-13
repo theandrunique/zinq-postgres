@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ChatSidebar from "#lib/components/ChatSidebar.svelte";
   import { connectSocket, disconnectSocket } from "#lib/services/socket.svelte";
   import { cn } from "#lib/utils";
   import type { LayoutProps } from "./$types";
+  import { ChatSidebar } from "#features/messenger";
 
   let { children }: LayoutProps = $props();
 
