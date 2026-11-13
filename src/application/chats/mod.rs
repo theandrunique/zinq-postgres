@@ -12,4 +12,6 @@ pub use delete_chat_member_command::{DeleteChatMemberCommand, DeleteChatMemberCo
 pub use get_attachments_query::{GetAttachmentsQuery, GetAttachmentsQueryHandler};
 pub use get_chat_query::{GetChatQuery, GetChatQueryHandler};
 pub use get_dm_chat_query::{GetDMChatCommand, GetDMChatCommandHandler};
-pub use get_user_chats_query::{GetUserChatsQuery, GetUserChatsQueryHandler};
+pub use get_user_chats_query::{
+    DEFAULT_USER_CHATS_LIMIT, GetUserChatsQuery, GetUserChatsQueryHandler, MAX_USER_CHATS_LIMIT,
+};

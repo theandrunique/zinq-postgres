@@ -51,6 +51,13 @@ impl From<LastMessageInfo> for LastMessageInfoSchema {
 }
 
 #[derive(Serialize)]
+pub struct UserChatsPageSchema {
+    pub chats: Vec<ChatSchema>,
+    pub next_cursor: Option<String>,
+    pub has_more: bool,
+}
+
+#[derive(Serialize)]
 pub struct ChatSchema {
     pub id: String,
     pub owner_id: Option<String>,

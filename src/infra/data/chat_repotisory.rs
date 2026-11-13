@@ -1,12 +1,15 @@
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::collections::HashMap;
 
 use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{Pool, Postgres, prelude::FromRow};
+use sqlx::{Pool, Postgres, QueryBuilder, prelude::FromRow};
 
 use crate::domain::{
-    chats::{Chat, ChatMember, ChatPermissions, ChatType, LastMessageInfo, data::ChatRepository},
+    chats::{
+        Chat, ChatMember, ChatPermissions, ChatType, LastMessageInfo,
+        data::{ChatPageCursor, ChatRepository, UserChatsPage},
+    },
     messages::MessageType,
 };
 
@@ -295,63 +298,124 @@ impl ChatRepository for PostgresChatRepository {
         .context("Failed to fetch member ids")
     }
 
-    async fn get_user_chats(&self, user_id: i64) -> Result<Vec<Chat>, anyhow::Error> {
-        let user_members =
-            sqlx::query_as::<_, ChatMemberDb>("SELECT * FROM chat_members WHERE user_id = $1")
-                .bind(user_id)
-                .fetch_all(&self.pool)
-                .await
-                .context("Failed to fetch chat members")?;
+    async fn get_user_chats(
+        &self,
+        user_id: i64,
+        after: Option<ChatPageCursor>,
+        limit: i32,
+    ) -> Result<UserChatsPage, anyhow::Error> {
+        let limit = limit.max(1);
+        // Fetch one extra row to know whether the next page exists.
+        let fetch_limit = limit.saturating_add(1);
 
-        let chat_ids: Vec<i64> = user_members.iter().map(|v| v.chat_id).collect();
+        let mut query = QueryBuilder::<Postgres>::new(
+            "SELECT c.id, c.chat_type, c.owner_id, c.name, c.image,
+                    c.last_message_id, c.last_message_content,
+                    c.last_message_type::text AS last_message_type,
+                    c.last_message_author_id, c.last_message_created_at, c.last_message_edited_at,
+                    c.permissions, c.created_at
+             FROM chats c
+             JOIN chat_members cm ON cm.chat_id = c.id AND cm.user_id = ",
+        );
+        query.push_bind(user_id);
+        query.push(" WHERE (c.chat_type <> 0 OR c.last_message_id IS NOT NULL)");
 
-        if chat_ids.is_empty() {
-            return Ok(vec![]);
+        match after {
+            Some(ChatPageCursor::Dated {
+                last_message_at,
+                chat_id,
+            }) => {
+                // Everything older than the cursor, plus the whole tail of chats
+                // without messages (they are ordered last).
+                query.push(
+                    " AND (c.last_message_created_at IS NULL
+                           OR (c.last_message_created_at, c.id) < (",
+                );
+                query.push_bind(last_message_at);
+                query.push("::timestamptz, ");
+                query.push_bind(chat_id);
+                query.push("::bigint))");
+            }
+            Some(ChatPageCursor::WithoutMessages { chat_id }) => {
+                query.push(" AND c.last_message_created_at IS NULL AND c.id < ");
+                query.push_bind(chat_id);
+            }
+            None => {}
         }
 
-        let chats_db = sqlx::query_as::<_, ChatDb>(
-            "SELECT id, chat_type, owner_id, name, image,
-                    last_message_id, last_message_content,
-                    last_message_type::text AS last_message_type,
-                    last_message_author_id, last_message_created_at, last_message_edited_at,
-                    permissions, created_at
-             FROM chats
-             WHERE id = ANY($1)
-               AND (chat_type <> 0 OR last_message_id IS NOT NULL)",
-        )
-        .bind(chat_ids)
-        .fetch_all(&self.pool)
-        .await
-        .context("Failed to fetch user chats")?;
+        query.push(" ORDER BY c.last_message_created_at DESC NULLS LAST, c.id DESC LIMIT ");
+        query.push_bind(fetch_limit);
 
+        let mut chats_db = query
+            .build_query_as::<ChatDb>()
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to fetch user chats")?;
+
+        let has_more = chats_db.len() > limit as usize;
+        if has_more {
+            chats_db.truncate(limit as usize);
+        }
+
+        let next_cursor = if has_more {
+            chats_db
+                .last()
+                .map(|chat| match chat.last_message_created_at {
+                    Some(last_message_at) => ChatPageCursor::Dated {
+                        last_message_at,
+                        chat_id: chat.id,
+                    },
+                    None => ChatPageCursor::WithoutMessages { chat_id: chat.id },
+                })
+        } else {
+            None
+        };
+
+        if chats_db.is_empty() {
+            return Ok(UserChatsPage {
+                chats: Vec::new(),
+                next_cursor: None,
+            });
+        }
+
+        let page_chat_ids: Vec<i64> = chats_db.iter().map(|chat| chat.id).collect();
         let dm_chat_ids: Vec<i64> = chats_db
             .iter()
-            .filter(|c| c.chat_type == 0)
-            .map(|c| c.id)
+            .filter(|chat| chat.chat_type == 0)
+            .map(|chat| chat.id)
             .collect();
 
         let mut members_by_chat: HashMap<i64, Vec<ChatMember>> = HashMap::new();
 
-        for chat_user in user_members {
+        // Only the current user's membership rows for the chats on this page.
+        let user_members = sqlx::query_as::<_, ChatMemberDb>(
+            "SELECT * FROM chat_members WHERE user_id = $1 AND chat_id = ANY($2)",
+        )
+        .bind(user_id)
+        .bind(&page_chat_ids)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat members")?;
+
+        for member in user_members {
             members_by_chat
-                .entry(chat_user.chat_id)
+                .entry(member.chat_id)
                 .or_default()
-                .push(ChatMember::from(chat_user));
+                .push(ChatMember::from(member));
         }
 
+        // DM chats need the other participant(s) to be displayed.
         if !dm_chat_ids.is_empty() {
             let members_db = sqlx::query_as::<_, ChatMemberDb>(
-                "SELECT * FROM chat_members WHERE chat_id = ANY($1)",
+                "SELECT * FROM chat_members WHERE chat_id = ANY($1) AND user_id <> $2",
             )
-            .bind(dm_chat_ids)
+            .bind(&dm_chat_ids)
+            .bind(user_id)
             .fetch_all(&self.pool)
             .await
             .context("Failed to fetch chat_members")?;
 
             for member in members_db {
-                if member.user_id == user_id {
-                    continue;
-                }
                 members_by_chat
                     .entry(member.chat_id)
                     .or_default()
@@ -367,7 +431,7 @@ impl ChatRepository for PostgresChatRepository {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(chats)
+        Ok(UserChatsPage { chats, next_cursor })
     }
 
     async fn upsert_chat_member(

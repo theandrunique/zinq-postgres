@@ -4,6 +4,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     application::{
@@ -15,8 +16,10 @@ use crate::{
     state::AppState,
 };
 
+#[serde_as]
 #[derive(Deserialize)]
 pub struct AckMessagesRequest {
+    #[serde_as(as = "DisplayFromStr")]
     pub last_read_message_id: i64,
     #[serde(default)]
     pub acks: Vec<AckInputRequest>,
