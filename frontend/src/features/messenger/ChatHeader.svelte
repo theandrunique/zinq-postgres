@@ -38,11 +38,7 @@
 <header
   class="flex h-14 shrink-0 items-center gap-(--space-1) border-b border-(--color-border-base) bg-(--color-background-surface) px-(--space-1) md:px-(--space-2)"
 >
-  <Button
-    variant="icon"
-    class="md:hidden"
-    onclick={() => goto(resolve("/chats"))}
-  >
+  <Button variant="icon" class="md:hidden" onclick={() => goto(resolve("/chats"))}>
     <ArrowLeft class="h-5 w-5" />
   </Button>
 

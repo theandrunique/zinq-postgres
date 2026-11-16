@@ -1,1 +1,1 @@
-export { default as ChatCreateDialog } from "./ChatCreateDialog.svelte"
+export { default as ChatCreateDialog } from "./ChatCreateDialog.svelte";
