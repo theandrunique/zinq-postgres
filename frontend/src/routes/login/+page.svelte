@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { AuthError, auth } from "#lib/auth.svelte.ts";
-  import { Button, Input } from "#lib/components/ui/index.ts";
+  import { AuthError, auth } from "$lib/auth.svelte.ts";
+  import { Button, Input } from "$lib/components/ui/index.ts";
 
   let username = $state("");
   let password = $state("");

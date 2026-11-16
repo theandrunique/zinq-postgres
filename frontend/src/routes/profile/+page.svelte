@@ -1,8 +1,8 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { auth, type UserSessionLifetime } from "#lib/auth.svelte.ts";
-  import { Avatar, Button } from "#lib/components/ui/index.ts";
-  import { appVersion, versionLabel } from "#lib/version.ts";
+  import { auth, type UserSessionLifetime } from "$lib/auth.svelte.ts";
+  import { Avatar, Button } from "$lib/components/ui/index.ts";
+  import { appVersion, versionLabel } from "$lib/version.ts";
 
   const SESSION_LABELS: Record<UserSessionLifetime, string> = {
     WEEK: "1 неделя",

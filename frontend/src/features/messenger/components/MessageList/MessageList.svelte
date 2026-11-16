@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatMember, Message } from "#lib/types";
+  import type { ChatMember, Message } from "$lib/types";
   import { groupMessagesByAuthor, groupMessagesByDate } from "./utils";
   import DateDivider from "./DateDivider.svelte";
   import MessageGroup from "./MessageGroup.svelte";

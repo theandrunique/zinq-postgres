@@ -13,7 +13,7 @@
     Switch,
     Textarea,
     Tooltip,
-  } from "#lib/components/ui/index.ts";
+  } from "$lib/components/ui/index.ts";
 
   const sections = [
     { id: "foundations", label: "Foundations" },

@@ -1,5 +1,5 @@
-import type { Message } from "#lib/types";
-import { isMetaMessage } from "#lib/utils/message";
+import type { Message } from "$lib/types";
+import { isMetaMessage } from "../../model/messageHelpers";
 
 export { isMetaMessage };
 

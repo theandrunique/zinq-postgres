@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { cn } from "#lib/utils";
-  import type { Message } from "#lib/types";
+  import { cn } from "$lib/utils";
+  import type { Message } from "$lib/types";
   import MessageStatus from "./MessageStatus.svelte";
   import MessageContent from "./MessageContent.svelte";
 

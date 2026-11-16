@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosHeaders, type AxiosRequestConfig } from "axios";
-import { auth } from "#lib/auth.svelte.ts";
+import { auth } from "$lib/auth.svelte.ts";
 
 export interface ApiErrorOptions {
   code: string;

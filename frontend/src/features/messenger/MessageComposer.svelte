@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SendHorizontal } from "@lucide/svelte";
-  import { Button, Textarea } from "#lib/components/ui";
+  import { Button, Textarea } from "$lib/components/ui";
 
   interface Props {
     onSend: (content: string) => Promise<void>;

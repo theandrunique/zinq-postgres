@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Check, CheckCheck } from "@lucide/svelte";
-  import { cn } from "#lib/utils";
-  import { idIsGreaterOrEqual } from "#lib/utils/id";
-  import type { Message } from "#lib/types";
+  import { cn } from "$lib/utils";
+  import { idIsGreaterOrEqual } from "$lib/utils/id";
+  import type { Message } from "$lib/types";
   import { formatMessageTime } from "./utils";
 
   interface Props {

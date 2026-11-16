@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Message } from "#lib/types";
+  import type { Message } from "$lib/types";
   import { isMetaMessage } from "./utils";
   import DefaultMessage from "./content/DefaultMessage.svelte";
   import MetaMessage from "./content/MetaMessage.svelte";

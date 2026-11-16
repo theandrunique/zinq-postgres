@@ -2,17 +2,18 @@
   import { createInfiniteQuery, createMutation, createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { page } from "$app/state";
   import { MessageCircle } from "@lucide/svelte";
-  import { Button, Loader } from "#lib/components/ui";
-  import { appendMessage, updateLastMessage } from "#lib/api/cache";
-  import { ApiError } from "#lib/api/client";
-  import { getChat, sendMessage } from "#lib/api/chats";
-  import { messagesQueryOptions } from "#lib/api/queries";
-  import { chatKeys } from "#lib/api/query-keys";
-  import { auth } from "#lib/auth.svelte.ts";
-  import { acknowledgeChat } from "#lib/services/socket.svelte";
-  import { chatSession } from "#lib/state/chat-session.svelte";
-  import { getChatDisplayName, normalizeMessages } from "#lib/utils";
-  import { ChatHeader, MessageComposer, MessageList } from "#features/messenger";
+  import { Button, Loader } from "$lib/components/ui";
+  import { appendMessage, updateLastMessage } from "$lib/queries/messenger/cache.ts";
+  import { ApiError } from "$lib/api/client";
+  import { getChat, sendMessage } from "$lib/api/chats";
+  import { messagesQueryOptions } from "$lib/queries/messenger/queries.ts";
+  import { chatKeys } from "$lib/queries/messenger/query-keys.ts";
+  import { auth } from "$lib/auth.svelte.ts";
+  import { acknowledgeChat } from "$services/socket.svelte.ts";
+  import { chatSession } from "$lib/state/chat-session.svelte.ts";
+  import { getChatDisplayName } from "$features/messenger/model/chatHelpers.ts";
+  import { normalizeMessages } from "$features/messenger/model/messageHelpers.ts";
+  import { ChatHeader, MessageComposer, MessageList } from "$features/messenger";
 
   const queryClient = useQueryClient();
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Select, type WithoutChild } from "bits-ui";
-  import { cn } from "#lib/utils";
+  import { cn } from "$lib/utils";
   import { Check, ChevronDown } from "@lucide/svelte";
 
   type Props = Omit<WithoutChild<Select.RootProps>, "type" | "value" | "onValueChange"> & {

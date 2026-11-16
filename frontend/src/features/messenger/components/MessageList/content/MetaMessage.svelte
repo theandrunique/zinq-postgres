@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Avatar } from "#lib/components/ui";
-  import { renderMessageText } from "#lib/utils";
-  import type { ChatMember, Message } from "#lib/types";
+  import { Avatar } from "$lib/components/ui";
+  import { renderMessageText } from "../../../model/messageHelpers.ts";
+  import type { ChatMember, Message } from "$lib/types";
 
   interface Props {
     message: Message;

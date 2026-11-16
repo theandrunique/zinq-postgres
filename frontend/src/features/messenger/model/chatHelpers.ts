@@ -1,8 +1,4 @@
-import type { Chat, ChatMember } from "#lib/types";
-
-export function getActiveMembers(chat: Chat): ChatMember[] {
-  return chat.members;
-}
+import type { Chat, ChatMember } from "$lib/types";
 
 export function getOtherMember(chat: Chat, currentUserId: string): ChatMember | null {
   return chat.members.find((member) => member.user_id !== currentUserId) ?? null;

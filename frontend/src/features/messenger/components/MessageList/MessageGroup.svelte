@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Avatar } from "#lib/components/ui";
-  import type { ChatMember, Message } from "#lib/types";
+  import { Avatar } from "$lib/components/ui";
+  import type { ChatMember, Message } from "$lib/types";
   import { isMetaMessage } from "./utils";
   import MessageBubble from "./MessageBubble.svelte";
   import MetaMessage from "./content/MetaMessage.svelte";

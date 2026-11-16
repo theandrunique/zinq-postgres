@@ -2,15 +2,15 @@
   import { ArrowLeft, Users } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { Avatar, Button } from "#lib/components/ui";
-  import type { Chat } from "#lib/types";
+  import { Avatar, Button } from "$lib/components/ui";
+  import type { Chat } from "$lib/types";
   import {
     getChatAvatar,
     getChatAvatarFallback,
     getChatDisplayName,
     getOtherMember,
     isSavedMessages,
-  } from "#lib/utils/chat";
+  } from "./model/chatHelpers";
 
   interface Props {
     chat: Chat;

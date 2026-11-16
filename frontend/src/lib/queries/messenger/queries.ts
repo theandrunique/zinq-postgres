@@ -1,13 +1,13 @@
 import type { InfiniteData } from "@tanstack/svelte-query";
-import type { ApiMessage, Chat, ChatsPage } from "#lib/types";
-import { compareIds, nextId } from "#lib/utils/id";
-import { countMessages, getChats, getMessages } from "./chats";
+import type { ApiMessage, Chat, ChatsPage } from "$lib/types";
+import { compareIds, nextId } from "$lib/utils/id";
+import { countMessages, getChats, getMessages } from "../../api/chats";
 import { chatKeys } from "./query-keys";
 
 export const MESSAGES_PAGE_SIZE = 50;
 export const CHATS_PAGE_SIZE = 20;
 
-export function selectChats(data: InfiniteData<ChatsPage, string | null>): Chat[] {
+function selectChats(data: InfiniteData<ChatsPage, string | null>): Chat[] {
   const seen = new Set<string>();
   const result: Chat[] = [];
 
@@ -23,7 +23,7 @@ export function selectChats(data: InfiniteData<ChatsPage, string | null>): Chat[
   return result;
 }
 
-export function selectMessages(data: InfiniteData<ApiMessage[], string | null>): ApiMessage[] {
+function selectMessages(data: InfiniteData<ApiMessage[], string | null>): ApiMessage[] {
   const seen = new Set<string>();
   const result: ApiMessage[] = [];
 

@@ -4,8 +4,8 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { auth } from "#lib/auth.svelte.ts";
-  import { Button, Loader } from "#lib/components/ui/index.ts";
+  import { auth } from "$lib/auth.svelte.ts";
+  import { Button, Loader } from "$lib/components/ui/index.ts";
 
   let {
     children,

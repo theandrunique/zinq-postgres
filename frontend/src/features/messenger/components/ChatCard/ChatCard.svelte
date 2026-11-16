@@ -1,10 +1,15 @@
 <script lang="ts">
   import { Check, CheckCheck, Users } from "@lucide/svelte";
-  import { Avatar } from "#lib/components/ui";
-  import type { Chat } from "#lib/types";
-  import { getChatAvatar, getChatAvatarFallback, getChatDisplayName, isSavedMessages } from "#lib/utils/chat";
-  import { compareIds } from "#lib/utils/id";
-  import { cn } from "#lib/utils";
+  import { Avatar } from "$lib/components/ui";
+  import type { Chat } from "$lib/types";
+  import {
+    getChatAvatar,
+    getChatAvatarFallback,
+    getChatDisplayName,
+    isSavedMessages,
+  } from "$features/messenger/model/chatHelpers.ts";
+  import { compareIds } from "$lib/utils/id";
+  import { cn } from "$lib/utils";
   import { formatTime, getMessagePreview } from "./utils";
 
   interface Props {

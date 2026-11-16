@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Message } from "#lib/types";
-  import { getAttachmentUrl } from "#lib/utils";
+  import type { Message } from "$lib/types";
+  import { getAttachmentUrl } from "../../../model/messageHelpers.ts";
   import MediaGrid from "./MediaGrid.svelte";
   import FileCard from "./FileCard.svelte";
 

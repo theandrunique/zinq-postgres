@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Attachment } from "#lib/types";
-  import { getAttachmentUrl } from "#lib/utils";
+  import type { Attachment } from "$lib/types";
+  import { getAttachmentUrl } from "../../../model/messageHelpers.ts";
 
   interface Props {
     attachment: Attachment;

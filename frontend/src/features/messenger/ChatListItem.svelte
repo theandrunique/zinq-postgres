@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
-  import { getUnreadRange, unreadQueryOptions } from "#lib/api/queries";
-  import type { Chat } from "#lib/types";
+  import { getUnreadRange, unreadQueryOptions } from "$lib/queries/messenger/queries.ts";
+  import type { Chat } from "$lib/types";
   import { ChatCard } from "./components/ChatCard";
 
   interface Props {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Message } from "#lib/types";
+  import type { Message } from "$lib/types";
 
   interface Props {
     message: Message;

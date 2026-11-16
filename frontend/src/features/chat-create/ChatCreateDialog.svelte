@@ -1,11 +1,11 @@
 <script lang="ts">
   import { createMutation, useQueryClient } from "@tanstack/svelte-query";
-  import { Button, Dialog, Input } from "#lib/components/ui";
-  import { createChat } from "#lib/api/chats";
-  import { chatKeys } from "#lib/api/query-keys";
-  import { ApiError } from "#lib/api/client";
-  import { auth } from "#lib/auth.svelte.ts";
-  import { chatCreateModal } from "../../services/messenger/chatCreateModal.svelte";
+  import { Button, Dialog, Input } from "$lib/components/ui";
+  import { createChat } from "$lib/api/chats";
+  import { ApiError } from "$lib/api/client";
+  import { auth } from "$lib/auth.svelte.ts";
+  import { chatCreateModal } from "$services/chatCreateModal.svelte.ts";
+  import { chatKeys } from "$lib/queries/messenger/query-keys.ts";
 
   const queryClient = useQueryClient();
   const currentUserId = $derived(auth.user?.profile.id ?? "");

@@ -1,5 +1,5 @@
-import type { Chat } from "#lib/types";
-import { isMetaMessage, renderMessageText } from "#lib/utils";
+import type { Chat } from "$lib/types";
+import { isMetaMessage, renderMessageText } from "../../model/messageHelpers";
 
 export function formatTime(iso: string): string {
   const date = new Date(iso);

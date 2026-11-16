@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronDown } from "@lucide/svelte";
-  import { cn } from "#lib/utils";
+  import { cn } from "$lib/utils";
   import type { ScrollManager } from "./scroll-manager.svelte.ts";
 
   interface Props {

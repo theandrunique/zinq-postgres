@@ -1,4 +1,4 @@
-import type { ApiMessage, ChatMember, Message, MessageTypeDescriptor } from "#lib/types";
+import type { ApiMessage, ChatMember, Message, MessageTypeDescriptor } from "$lib/types";
 
 export const META_MESSAGE_TYPES = new Set([
   "MEMBER_ADD",

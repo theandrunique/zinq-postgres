@@ -1,6 +1,6 @@
 import { io, type Socket } from "socket.io-client";
-import type { ApiMessage, GatewayEvent, HelloEvent } from "#lib/types";
-import { ackMessages } from "#lib/api/chats";
+import type { ApiMessage, GatewayEvent, HelloEvent } from "$lib/types";
+import { ackMessages } from "$lib/api/chats";
 import {
   appendMessage,
   applyMessageAck,
@@ -12,12 +12,12 @@ import {
   removeMessageEverywhere,
   updateLastMessage,
   upsertChat,
-} from "#lib/api/cache";
-import { queryClient } from "#lib/queries/query-client.ts";
-import { chatKeys } from "#lib/api/query-keys";
-import { auth } from "#lib/auth.svelte.ts";
-import { compareIds } from "#lib/utils/id";
-import { chatSession } from "#lib/state/chat-session.svelte";
+} from "$lib/queries/messenger/cache.ts";
+import { queryClient } from "$lib/queries/query-client.ts";
+import { chatKeys } from "$lib/queries/messenger/query-keys.ts";
+import { auth } from "$lib/auth.svelte.ts";
+import { compareIds } from "$lib/utils/id";
+import { chatSession } from "$lib/state/chat-session.svelte.ts";
 
 const ACK_DEBOUNCE_MS = 500;
 

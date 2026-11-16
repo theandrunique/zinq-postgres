@@ -1,6 +1,6 @@
 import type { InfiniteData, QueryClient } from "@tanstack/svelte-query";
-import type { ApiMessage, Chat, ChatsPage, LastMessageInfo, MessagesCountResponse } from "#lib/types";
-import { maxId } from "#lib/utils/id";
+import type { ApiMessage, Chat, ChatsPage, LastMessageInfo, MessagesCountResponse } from "$lib/types";
+import { maxId } from "$lib/utils/id";
 import { chatKeys } from "./query-keys";
 
 export type ChatsData = InfiniteData<ChatsPage, string | null>;

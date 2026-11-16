@@ -1,9 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { connectSocket, disconnectSocket } from "#lib/services/socket.svelte";
-  import { cn } from "#lib/utils";
+  import { connectSocket, disconnectSocket } from "$services/socket.svelte.ts";
+  import { cn } from "$lib/utils";
   import type { LayoutProps } from "./$types";
-  import { ChatSidebar } from "#features/messenger";
+  import { ChatSidebar } from "$features/messenger";
+  import { ChatCreateDialog } from "$features/chat-create";
 
   let { children }: LayoutProps = $props();
 
@@ -22,4 +23,6 @@
   <main class={cn("min-w-0 flex-1 overflow-hidden", !hasChat && "hidden md:block")}>
     {@render children()}
   </main>
+
+  <ChatCreateDialog />
 </div>

@@ -4,12 +4,12 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { Plus, Users } from "@lucide/svelte";
-  import { Avatar, Button, DropdownMenu, Loader } from "#lib/components/ui";
-  import { chatsQueryOptions } from "#lib/api/queries";
-  import { auth } from "#lib/auth.svelte.ts";
-  import { cn } from "#lib/utils";
+  import { Avatar, Button, DropdownMenu, Loader } from "$lib/components/ui";
+  import { chatsQueryOptions } from "$lib/queries/messenger/queries.ts";
+  import { auth } from "$lib/auth.svelte.ts";
+  import { cn } from "$lib/utils";
   import ChatListItem from "./ChatListItem.svelte";
-  import { chatCreateModal } from "../../services/messenger/chatCreateModal.svelte";
+  import { chatCreateModal } from "$services/chatCreateModal.svelte.ts";
 
   interface Props {
     class?: string;

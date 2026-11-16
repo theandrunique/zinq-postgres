@@ -7,7 +7,7 @@ import type {
   MessageAcksResponse,
   MessagesCountResponse,
   SendMessageRequest,
-} from "#lib/types";
+} from "$lib/types";
 
 export interface GetChatsParams {
   cursor?: string | null;
