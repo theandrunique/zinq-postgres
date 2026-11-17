@@ -22,7 +22,7 @@ impl From<ChatMember> for ChatMemberSchema {
             username: value.username,
             display_name: value.display_name,
             avatar: value.avatar,
-            permissions: value.permissions.map(|p| p.to_string()),
+            permissions: value.permissions.map(|p| p.bits().to_string()),
         }
     }
 }
@@ -101,7 +101,7 @@ impl ChatSchema {
             image: chat.image,
             chat_type: chat.chat_type,
             last_message: chat.last_message.map(|v| v.into()),
-            permissions: chat.permissions.to_string(),
+            permissions: chat.permissions.bits().to_string(),
             created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
             last_read_message_id: current_last_read,
@@ -120,7 +120,7 @@ impl From<Chat> for ChatSchema {
             image: chat.image,
             chat_type: chat.chat_type,
             last_message: chat.last_message.map(|v| v.into()),
-            permissions: chat.permissions.to_string(),
+            permissions: chat.permissions.bits().to_string(),
             created_at: chat.created_at,
             members: chat.members.into_iter().map(|m| m.into()).collect(),
             last_read_message_id: None,
