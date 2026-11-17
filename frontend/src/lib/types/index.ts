@@ -1,17 +1,19 @@
 export type ChatType = "DM" | "GROUP_DM";
 
-export interface ChatMember {
+export interface MessageAuthor {
   user_id: string;
   username: string;
   display_name: string;
   avatar: string | null;
+}
+
+export interface ChatMember extends MessageAuthor {
   permissions: string | null;
 }
 
 /**
- * The backend serializes message types differently in different places:
- * - `MessageSchema.type` is a plain string, with the variant data in `payload`;
- * - `LastMessageInfoSchema.message_type` is the domain enum, with data in `metadata`.
+ * The backend serializes message types as `{ type, payload }` both for messages
+ * and for the last message of a chat.
  */
 export interface MessageTypeDescriptor {
   type: string;
@@ -22,6 +24,7 @@ export interface MessageTypeDescriptor {
 export interface LastMessageInfo {
   message_id: string;
   author_id: string;
+  author: MessageAuthor;
   content: string;
   message_type: MessageTypeDescriptor;
   edited_at: string | null;
@@ -64,6 +67,7 @@ export interface ApiMessage {
   id: string;
   chat_id: string;
   author_id: string;
+  author: MessageAuthor;
   content: string;
   created_at: string;
   edited_at: string | null;
@@ -74,7 +78,6 @@ export interface ApiMessage {
 export interface Message extends Omit<ApiMessage, "type"> {
   type: string;
   metadata: Record<string, unknown>;
-  author: ChatMember | null;
   referenced_message: Message | null;
 }
 

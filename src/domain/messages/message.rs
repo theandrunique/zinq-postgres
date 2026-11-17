@@ -43,6 +43,26 @@ pub struct CreateMetaMessageRequest {
     pub message_type: MessageType,
 }
 
+impl MessageType {
+    /// Пользователь, на которого ссылается системное сообщение
+    /// (`MEMBER_ADD`/`MEMBER_REMOVE`/`MEMBER_LEAVE`).
+    pub fn referenced_user_id(&self) -> Option<i64> {
+        match self {
+            MessageType::MemberAdd { user_id }
+            | MessageType::MemberRemove { user_id }
+            | MessageType::MemberLeave { user_id } => Some(*user_id),
+            MessageType::Default
+            | MessageType::Reply { .. }
+            | MessageType::ChatNameUpdate { .. }
+            | MessageType::ChatImageUpdate { .. }
+            | MessageType::ChatPinnedMessage
+            | MessageType::ChatUnpinMessage
+            | MessageType::ChatCreate { .. }
+            | MessageType::Forward => None,
+        }
+    }
+}
+
 impl Message {
     pub fn new(request: CreateMessageRequest) -> Self {
         Self {

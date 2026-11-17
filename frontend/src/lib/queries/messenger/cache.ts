@@ -10,6 +10,7 @@ export function toLastMessageInfo(message: ApiMessage): LastMessageInfo {
   return {
     message_id: message.id,
     author_id: message.author_id,
+    author: message.author,
     content: message.content,
     message_type: message.type,
     edited_at: message.edited_at,

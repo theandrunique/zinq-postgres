@@ -30,24 +30,20 @@ export function getMessagePreview(chat: Chat, currentUserId: string): string | n
   const lastMessage = chat.last_message;
   if (!lastMessage) return null;
 
-  const text = renderMessageText(
-    {
-      content: lastMessage.content,
-      type: lastMessage.message_type.type,
-      payload: lastMessage.message_type.payload,
-      metadata: lastMessage.message_type.metadata,
-    },
-    chat.members,
-  );
+  const text = renderMessageText({
+    content: lastMessage.content,
+    type: lastMessage.message_type.type,
+    payload: lastMessage.message_type.payload,
+    metadata: lastMessage.message_type.metadata,
+  });
 
   if (chat.type !== "GROUP_DM") return text;
 
   if (isMetaMessage({ type: lastMessage.message_type.type })) return text;
 
-  const author = chat.members.find((member) => member.user_id === lastMessage.author_id);
-
   if (lastMessage.author_id === currentUserId) return `Вы: ${text}`;
-  if (!author) return text;
 
-  return `${author.display_name || author.username}: ${text}`;
+  const authorName = lastMessage.author?.display_name || lastMessage.author?.username;
+
+  return authorName ? `${authorName}: ${text}` : text;
 }

@@ -6,7 +6,9 @@ use async_trait::async_trait;
 use sqlx::prelude::FromRow;
 use sqlx::{Pool, Postgres};
 
+use crate::domain::chats::ChatMember;
 use crate::domain::chats::data::ChatMemberRepository;
+use crate::infra::data::chat_repotisory::ChatMemberDb;
 
 #[derive(Debug, FromRow)]
 struct ChatMemberStatus {
@@ -56,5 +58,30 @@ impl ChatMemberRepository for PostgresChatMemberRepository {
         }
 
         Ok(result)
+    }
+
+    async fn get_members(
+        &self,
+        chat_id: i64,
+        user_ids: &[i64],
+    ) -> Result<HashMap<i64, ChatMember>, anyhow::Error> {
+        if user_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let members = sqlx::query_as::<_, ChatMemberDb>(
+            "SELECT * FROM chat_members WHERE chat_id = $1 AND user_id = ANY($2)",
+        )
+        .bind(chat_id)
+        .bind(user_ids)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat members by ids")?
+        .into_iter()
+        .map(ChatMember::from)
+        .map(|member| (member.user_id, member))
+        .collect::<HashMap<_, _>>();
+
+        Ok(members)
     }
 }

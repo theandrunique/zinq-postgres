@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatMember, Message } from "$lib/types";
+  import type { Message } from "$lib/types";
   import { groupMessagesByAuthor, groupMessagesByDate } from "./utils";
   import DateDivider from "./DateDivider.svelte";
   import MessageGroup from "./MessageGroup.svelte";
@@ -9,20 +9,12 @@
   interface Props {
     messages: Message[];
     currentUserId: string;
-    members?: ChatMember[];
     maxReadMessageId?: string;
     onLoadAroundMessage?: (targetId: string) => Promise<void>;
     onLoadOlder?: () => void;
   }
 
-  let {
-    messages,
-    currentUserId,
-    members = [],
-    maxReadMessageId = "",
-    onLoadAroundMessage,
-    onLoadOlder,
-  }: Props = $props();
+  let { messages, currentUserId, maxReadMessageId = "", onLoadAroundMessage, onLoadOlder }: Props = $props();
 
   let dateGroups = $derived(groupMessagesByDate(messages));
   let containerEl = $state<HTMLElement | null>(null);
@@ -111,7 +103,6 @@
             <MessageGroup
               {group}
               {currentUserId}
-              {members}
               {maxReadMessageId}
               messageAction={manager.messageAction}
               onNavigateToMessage={handleNavigateToMessage}

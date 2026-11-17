@@ -209,10 +209,14 @@ impl TestContext {
         };
 
         let handler = GetDMChatCommandHandler::new(&self.app_state);
-        handler.handle(cmd).await.expect(&format!(
-            "Failed to get DM chat between {} and {}",
-            user1_id, user2_id
-        ))
+        handler
+            .handle(cmd)
+            .await
+            .expect(&format!(
+                "Failed to get DM chat between {} and {}",
+                user1_id, user2_id
+            ))
+            .chat
     }
 
     pub async fn create_message(

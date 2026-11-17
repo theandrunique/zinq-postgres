@@ -245,12 +245,13 @@ impl ChatRepository for PostgresChatRepository {
             None => return Ok(None),
         };
 
-        let members_db =
-            sqlx::query_as::<_, ChatMemberDb>("SELECT * FROM chat_members WHERE chat_id = $1")
-                .bind(chat_id)
-                .fetch_all(&self.pool)
-                .await
-                .context("Failed to fetch chat members")?;
+        let members_db = sqlx::query_as::<_, ChatMemberDb>(
+            "SELECT * FROM chat_members WHERE chat_id = $1 AND NOT is_leave",
+        )
+        .bind(chat_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch chat members")?;
 
         let members: Vec<ChatMember> = members_db
             .into_iter()
@@ -318,7 +319,8 @@ impl ChatRepository for PostgresChatRepository {
              JOIN chat_members cm ON cm.chat_id = c.id AND cm.user_id = ",
         );
         query.push_bind(user_id);
-        query.push(" WHERE (c.chat_type <> 0 OR c.last_message_id IS NOT NULL)");
+        query
+            .push(" AND NOT cm.is_leave WHERE (c.chat_type <> 0 OR c.last_message_id IS NOT NULL)");
 
         match after {
             Some(ChatPageCursor::Dated {
@@ -379,48 +381,22 @@ impl ChatRepository for PostgresChatRepository {
         }
 
         let page_chat_ids: Vec<i64> = chats_db.iter().map(|chat| chat.id).collect();
-        let dm_chat_ids: Vec<i64> = chats_db
-            .iter()
-            .filter(|chat| chat.chat_type == 0)
-            .map(|chat| chat.id)
-            .collect();
 
         let mut members_by_chat: HashMap<i64, Vec<ChatMember>> = HashMap::new();
 
-        // Only the current user's membership rows for the chats on this page.
-        let user_members = sqlx::query_as::<_, ChatMemberDb>(
-            "SELECT * FROM chat_members WHERE user_id = $1 AND chat_id = ANY($2)",
+        let all_members = sqlx::query_as::<_, ChatMemberDb>(
+            "SELECT * FROM chat_members WHERE chat_id = ANY($1) AND NOT is_leave",
         )
-        .bind(user_id)
         .bind(&page_chat_ids)
         .fetch_all(&self.pool)
         .await
         .context("Failed to fetch chat members")?;
 
-        for member in user_members {
+        for member in all_members {
             members_by_chat
                 .entry(member.chat_id)
                 .or_default()
                 .push(ChatMember::from(member));
-        }
-
-        // DM chats need the other participant(s) to be displayed.
-        if !dm_chat_ids.is_empty() {
-            let members_db = sqlx::query_as::<_, ChatMemberDb>(
-                "SELECT * FROM chat_members WHERE chat_id = ANY($1) AND user_id <> $2",
-            )
-            .bind(&dm_chat_ids)
-            .bind(user_id)
-            .fetch_all(&self.pool)
-            .await
-            .context("Failed to fetch chat_members")?;
-
-            for member in members_db {
-                members_by_chat
-                    .entry(member.chat_id)
-                    .or_default()
-                    .push(ChatMember::from(member));
-            }
         }
 
         let chats: Vec<Chat> = chats_db

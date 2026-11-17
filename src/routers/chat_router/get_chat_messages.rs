@@ -44,5 +44,5 @@ pub async fn get_chat_messages(
 
     let result = handler.handle(command).await?;
 
-    Ok(Json(result.into()))
+    Ok(Json(result.try_into()?))
 }

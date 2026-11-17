@@ -1,4 +1,4 @@
-import type { ApiMessage, ChatMember, Message, MessageTypeDescriptor } from "$lib/types";
+import type { ApiMessage, Message, MessageAuthor, MessageTypeDescriptor } from "$lib/types";
 
 export const META_MESSAGE_TYPES = new Set([
   "MEMBER_ADD",
@@ -50,13 +50,16 @@ export function messageMetadata(value: unknown): Record<string, unknown> {
   return source && typeof source === "object" ? (source as Record<string, unknown>) : {};
 }
 
-function findMemberName(members: ChatMember[] | undefined, value: unknown): string | null {
-  if (members === undefined || value === undefined || value === null) return null;
+function authorName(author: Partial<MessageAuthor> | null | undefined): string | null {
+  if (!author) return null;
 
-  const id = String(value);
-  const member = members.find((item) => item.user_id === id);
+  return author.display_name || author.username || null;
+}
 
-  return member?.display_name ?? member?.username ?? null;
+function referencedUserName(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+
+  return authorName(value as Partial<MessageAuthor>);
 }
 
 function attachmentPreview(message: RenderableMessage & { attachments?: unknown }): string {
@@ -75,13 +78,9 @@ function attachmentPreview(message: RenderableMessage & { attachments?: unknown 
 
 /**
  * Turns any backend message representation into a human readable one-line text.
- * Accepts both `{ type, payload }` (MessageSchema) and `{ type, metadata }`
- * (domain MessageType / LastMessageInfoSchema).
+ * The user a meta message refers to is embedded into its payload by the backend.
  */
-export function renderMessageText(
-  message: RenderableMessage & { attachments?: unknown },
-  members?: ChatMember[],
-): string {
+export function renderMessageText(message: RenderableMessage & { attachments?: unknown }): string {
   const type = messageTypeName(message.type);
   const metadata = messageMetadata(message);
   const content = message.content ?? "";
@@ -93,17 +92,17 @@ export function renderMessageText(
       return content || attachmentPreview(message) || "Вложение";
 
     case "MEMBER_ADD": {
-      const name = findMemberName(members, metadata.user_id);
+      const name = referencedUserName(metadata.user);
       return name ? `${name} добавлен(а) в чат` : "Участник добавлен в чат";
     }
 
     case "MEMBER_REMOVE": {
-      const name = findMemberName(members, metadata.user_id);
+      const name = referencedUserName(metadata.user);
       return name ? `${name} удалён(а) из чата` : "Участник удалён из чата";
     }
 
     case "MEMBER_LEAVE": {
-      const name = findMemberName(members, metadata.user_id);
+      const name = referencedUserName(metadata.user);
       return name ? `${name} покинул(а) чат` : "Участник покинул чат";
     }
 
@@ -131,9 +130,7 @@ export function renderMessageText(
   }
 }
 
-export function normalizeMessages(dtos: ApiMessage[], members: ChatMember[]): Message[] {
-  const membersById = new Map(members.map((member) => [member.user_id, member]));
-
+export function normalizeMessages(dtos: ApiMessage[]): Message[] {
   const normalized: Message[] = dtos.map((dto) => {
     const { type, ...rest } = dto;
 
@@ -141,7 +138,6 @@ export function normalizeMessages(dtos: ApiMessage[], members: ChatMember[]): Me
       ...rest,
       type: messageTypeName(type),
       metadata: messageMetadata(type),
-      author: membersById.get(dto.author_id) ?? null,
       referenced_message: null,
     };
   });
@@ -160,6 +156,6 @@ export function normalizeMessages(dtos: ApiMessage[], members: ChatMember[]): Me
   return normalized;
 }
 
-export function normalizeMessage(dto: ApiMessage, members: ChatMember[]): Message {
-  return normalizeMessages([dto], members)[0];
+export function normalizeMessage(dto: ApiMessage): Message {
+  return normalizeMessages([dto])[0];
 }

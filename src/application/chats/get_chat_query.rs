@@ -1,8 +1,12 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler,
-    domain::chats::{Chat, data::ChatRepository},
+    application::{RequestHandler, chats::references::load_referenced_members},
+    domain::chats::{
+        Chat, ChatMember,
+        data::{ChatMemberRepository, ChatRepository},
+    },
     error::Error,
     state::AppState,
 };
@@ -13,21 +17,31 @@ pub struct GetChatQuery {
     pub chat_id: i64,
 }
 
+#[derive(Debug, Clone)]
+pub struct ChatWithReferences {
+    pub chat: Chat,
+    /// Профили, на которые ссылается последнее сообщение чата, но которых нет
+    /// среди активных участников.
+    pub referenced_members: HashMap<i64, ChatMember>,
+}
+
 pub struct GetChatQueryHandler {
     chat_repository: Arc<dyn ChatRepository>,
+    chat_member_repository: Arc<dyn ChatMemberRepository>,
 }
 
 impl GetChatQueryHandler {
     pub fn new(state: &AppState) -> Self {
         Self {
             chat_repository: Arc::clone(&state.chat_repository),
+            chat_member_repository: Arc::clone(&state.chat_member_repository),
         }
     }
 }
 
 impl RequestHandler for GetChatQueryHandler {
     type Request = GetChatQuery;
-    type Output = Chat;
+    type Output = ChatWithReferences;
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
@@ -45,6 +59,16 @@ impl RequestHandler for GetChatQueryHandler {
             });
         }
 
-        Ok(chat)
+        let referenced_members = load_referenced_members(
+            self.chat_member_repository.as_ref(),
+            std::slice::from_ref(&chat),
+        )
+        .await
+        .map_err(Error::InternalServerError)?;
+
+        Ok(ChatWithReferences {
+            chat,
+            referenced_members,
+        })
     }
 }

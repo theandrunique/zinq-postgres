@@ -113,14 +113,15 @@ pub async fn get_user_chats(
 
     let result = handler.handle(command).await?;
 
+    let referenced_members = result.referenced_members;
     let next_cursor = result.next_cursor.map(encode_cursor);
     let has_more = next_cursor.is_some();
 
     let chats = result
         .chats
         .into_iter()
-        .map(|chat| ChatSchema::from_chat_for_user(chat, claims.sub))
-        .collect::<Vec<ChatSchema>>();
+        .map(|chat| ChatSchema::from_chat_for_user(chat, claims.sub, &referenced_members))
+        .collect::<Result<Vec<_>, anyhow::Error>>()?;
 
     Ok(Json(UserChatsPageSchema {
         chats,

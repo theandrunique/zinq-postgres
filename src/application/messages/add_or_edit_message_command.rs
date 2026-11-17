@@ -8,8 +8,8 @@ use crate::{
     domain::{
         attachments::{Attachment, data::AttachmentRepository},
         chats::{
-            ChatPermissions, ChatType,
-            data::{ChatLoadOptions, ChatLoader},
+            ChatMember, ChatPermissions, ChatType,
+            data::{ChatLoadOptions, ChatLoader, ChatMemberRepository},
         },
         events::{DomainEvent, Mediator},
         messages::{CreateMessageRequest, Message, MessageType, data::MessageRepository},
@@ -38,10 +38,15 @@ pub struct AddOrEditMessageCommand {
 pub struct AddOrEditMessageCommandResult {
     pub message: Message,
     pub attachments: Vec<Attachment>,
+    pub initiator: ChatMember,
+    /// Пользователь, на которого ссылается системное сообщение, если
+    /// редактируется мета-сообщение.
+    pub subject: Option<ChatMember>,
 }
 
 pub struct AddOrEditMessageCommandHandler {
     chat_loader: Arc<dyn ChatLoader>,
+    chat_member_repository: Arc<dyn ChatMemberRepository>,
     message_repository: Arc<dyn MessageRepository>,
     attachment_repository: Arc<dyn AttachmentRepository>,
     attachment_service: Arc<AttachmentService>,
@@ -53,12 +58,43 @@ impl AddOrEditMessageCommandHandler {
     pub fn new(state: &AppState) -> Self {
         Self {
             chat_loader: Arc::clone(&state.chat_loader),
+            chat_member_repository: Arc::clone(&state.chat_member_repository),
             message_repository: Arc::clone(&state.message_repository),
             attachment_repository: Arc::clone(&state.attachment_repository),
             attachment_service: Arc::clone(&state.attachment_service),
             id_gen: Arc::clone(&state.id_gen),
             mediator: Arc::clone(&state.mediator),
         }
+    }
+
+    /// Профиль пользователя, на которого ссылается системное сообщение, если
+    /// он отличается от автора.
+    async fn load_subject(
+        &self,
+        message: &Message,
+        initiator: &ChatMember,
+    ) -> Result<Option<ChatMember>, Error> {
+        let Some(user_id) = message.message_type.referenced_user_id() else {
+            return Ok(None);
+        };
+
+        if user_id == initiator.user_id {
+            return Ok(None);
+        }
+
+        self.chat_member_repository
+            .get_members(message.chat_id, &[user_id])
+            .await
+            .map_err(Error::InternalServerError)?
+            .remove(&user_id)
+            .map(Some)
+            .ok_or_else(|| {
+                Error::InternalServerError(anyhow::anyhow!(
+                    "Chat member {} referenced by message {} was not found",
+                    user_id,
+                    message.id
+                ))
+            })
     }
 }
 
@@ -155,17 +191,22 @@ impl RequestHandler for AddOrEditMessageCommandHandler {
                 .await
                 .map_err(Error::InternalServerError)?;
 
+            let subject = self.load_subject(&message, &initiator).await?;
+
             self.mediator
                 .publish(&DomainEvent::MessageUpdate {
                     message: message.clone(),
                     attachments: attachments.clone(),
-                    initiator_id: initiator.user_id,
+                    initiator: initiator.clone(),
+                    subject: subject.clone(),
                 })
                 .await?;
 
             Ok(AddOrEditMessageCommandResult {
                 message,
                 attachments,
+                initiator,
+                subject,
             })
         } else {
             let message_type = if request.referenced_message_id.is_some() {
@@ -204,13 +245,16 @@ impl RequestHandler for AddOrEditMessageCommandHandler {
                 .publish(&DomainEvent::MessageCreate {
                     message: message.clone(),
                     attachments: attachments.clone(),
-                    initiator_id: initiator.user_id,
+                    initiator: initiator.clone(),
+                    subject: None,
                 })
                 .await?;
 
             Ok(AddOrEditMessageCommandResult {
                 message,
                 attachments,
+                initiator,
+                subject: None,
             })
         }
     }

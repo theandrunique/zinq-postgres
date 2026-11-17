@@ -3,12 +3,12 @@ use chrono::{Duration, TimeZone, Utc};
 use crate::{
     application::{
         RequestHandler,
-        chats::{GetUserChatsQuery, GetUserChatsQueryHandler},
+        chats::{
+            DeleteChatMemberCommand, DeleteChatMemberCommandHandler, GetUserChatsQuery,
+            GetUserChatsQueryHandler, GetUserChatsQueryResult,
+        },
     },
-    domain::chats::{
-        ChatType,
-        data::{ChatPageCursor, UserChatsPage},
-    },
+    domain::chats::{ChatType, data::ChatPageCursor},
     tests::common::TestContext,
 };
 
@@ -17,7 +17,7 @@ async fn get_page(
     user_id: i64,
     cursor: Option<ChatPageCursor>,
     limit: i32,
-) -> UserChatsPage {
+) -> GetUserChatsQueryResult {
     let query_handler = GetUserChatsQueryHandler::new(&ctx.app_state);
     let query = GetUserChatsQuery {
         current_user_id: user_id,
@@ -28,7 +28,7 @@ async fn get_page(
     query_handler.handle(query).await.expect("Should succeed")
 }
 
-fn chat_ids(page: &UserChatsPage) -> Vec<i64> {
+fn chat_ids(page: &GetUserChatsQueryResult) -> Vec<i64> {
     page.chats.iter().map(|chat| chat.id).collect()
 }
 
@@ -91,8 +91,12 @@ async fn test_get_user_chats_returns_chats() {
         match chat.chat_type {
             ChatType::GroupDm => {
                 assert!(
-                    chat.members.len() == 1 && chat.members[0].user_id == current_user.id,
-                    "GroupDm chat should have loaded only current user"
+                    chat.members.iter().any(|m| m.user_id == current_user.id),
+                    "GroupDm chat should contain current user"
+                );
+                assert!(
+                    chat.members.len() == 3,
+                    "GroupDm chat should have all active members loaded"
                 );
             }
             ChatType::Dm => {
@@ -112,6 +116,41 @@ async fn test_get_user_chats_returns_chats() {
             }
         }
     }
+}
+
+#[tokio::test]
+async fn test_get_user_chats_excludes_left_chats_and_resolves_left_members() {
+    let ctx = TestContext::new("test_get_user_chats_excludes_left_chats").await;
+
+    let owner = ctx.create_test_user("owner", "owner@test.com").await;
+    let member = ctx.create_test_user("member", "member@test.com").await;
+
+    let chat = ctx
+        .create_group_chat(owner.id, "Test Group", vec![member.id], None)
+        .await;
+    ctx.create_message(chat.id, member.id, "Hello").await;
+
+    DeleteChatMemberCommandHandler::new(&ctx.app_state)
+        .handle(DeleteChatMemberCommand {
+            current_user_id: owner.id,
+            chat_id: chat.id,
+            user_id: member.id,
+        })
+        .await
+        .expect("Should remove member");
+
+    let member_page = get_page(&ctx, member.id, None, 20).await;
+    assert!(
+        member_page.chats.is_empty(),
+        "Chats the user has left must not be returned"
+    );
+
+    let owner_page = get_page(&ctx, owner.id, None, 20).await;
+    assert_eq!(chat_ids(&owner_page), vec![chat.id]);
+    assert!(
+        owner_page.referenced_members.contains_key(&member.id),
+        "Left member referenced by the last message must be resolved"
+    );
 }
 
 #[tokio::test]

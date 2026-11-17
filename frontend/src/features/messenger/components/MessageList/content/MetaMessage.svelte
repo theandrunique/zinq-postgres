@@ -1,16 +1,15 @@
 <script lang="ts">
   import { Avatar } from "$lib/components/ui";
   import { renderMessageText } from "../../../model/messageHelpers.ts";
-  import type { ChatMember, Message } from "$lib/types";
+  import type { Message } from "$lib/types";
 
   interface Props {
     message: Message;
-    members?: ChatMember[];
   }
 
-  let { message, members = [] }: Props = $props();
+  let { message }: Props = $props();
 
-  let text = $derived(renderMessageText(message, members));
+  let text = $derived(renderMessageText(message));
   let imageUrl = $derived.by(() => {
     if (message.type !== "CHAT_IMAGE_UPDATE") return null;
 

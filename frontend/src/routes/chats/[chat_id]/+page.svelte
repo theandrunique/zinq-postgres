@@ -33,7 +33,7 @@
 
   const chat = $derived(chatQuery.data ?? null);
   const rawMessages = $derived(messagesQuery.data ?? []);
-  const messages = $derived(chat ? normalizeMessages(rawMessages, chat.members) : []);
+  const messages = $derived(chat ? normalizeMessages(rawMessages) : []);
   const displayName = $derived(chat ? getChatDisplayName(chat, currentUserId) : "Чат");
 
   let sendError = $state<string | null>(null);
@@ -132,7 +132,6 @@
           <MessageList
             {messages}
             {currentUserId}
-            members={chat.members}
             maxReadMessageId={chat.max_read_message_id ?? ""}
             onLoadOlder={handleLoadOlder}
           />
