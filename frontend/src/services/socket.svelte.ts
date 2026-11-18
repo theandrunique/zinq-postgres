@@ -1,12 +1,10 @@
 import { io, type Socket } from "socket.io-client";
 import type { ApiMessage, GatewayEvent, HelloEvent } from "$lib/types";
-import { ackMessages } from "$lib/api/chats";
 import {
   appendMessage,
   applyMessageAck,
   bumpUnread,
   invalidateChat,
-  markChatRead,
   patchLastMessageIfCurrent,
   patchMessage,
   removeMessageEverywhere,
@@ -16,81 +14,50 @@ import {
 import { queryClient } from "$lib/queries/query-client.ts";
 import { chatKeys } from "$lib/queries/messenger/query-keys.ts";
 import { auth } from "$lib/auth.svelte.ts";
-import { compareIds } from "$lib/utils/id";
 import { chatSession } from "$lib/state/chat-session.svelte.ts";
 
-const ACK_DEBOUNCE_MS = 500;
+const LIST_INVALIDATE_DEBOUNCE_MS = 1_000;
 
 let socket: Socket | null = null;
 let refreshingToken = false;
-const ackTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-const ackInFlight: Record<string, true> = {};
-const ackQueued: Record<string, string> = {};
+let listInvalidateTimer: ReturnType<typeof setTimeout> | null = null;
 
 function isPageVisible(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
-function scheduleAck(chatId: string, messageId: string): void {
-  const existing = ackTimers[chatId];
-  if (existing) clearTimeout(existing);
+/**
+ * A message arrived for a chat that is not in the loaded pages (for example,
+ * an old chat the user has not scrolled to yet). The list has to be refetched
+ * for the chat to jump to the top, but events are coalesced to avoid a request
+ * storm when several such chats receive messages at once.
+ */
+function scheduleChatListInvalidate(): void {
+  if (listInvalidateTimer) return;
 
-  const timer = setTimeout(() => {
-    delete ackTimers[chatId];
-    void acknowledgeChat(chatId, messageId);
-  }, ACK_DEBOUNCE_MS);
-
-  ackTimers[chatId] = timer;
-}
-
-export async function acknowledgeChat(chatId: string, messageId: string): Promise<void> {
-  const chat = queryClient.getQueryData<{ last_read_message_id: string | null }>(chatKeys.detail(chatId));
-
-  if (chat?.last_read_message_id && compareIds(chat.last_read_message_id, messageId) >= 0) {
-    return;
-  }
-
-  if (ackInFlight[chatId]) {
-    const queued = ackQueued[chatId];
-
-    if (!queued || compareIds(messageId, queued) > 0) {
-      ackQueued[chatId] = messageId;
-    }
-
-    return;
-  }
-
-  ackInFlight[chatId] = true;
-
-  try {
-    await ackMessages(chatId, messageId);
-    markChatRead(queryClient, chatId, messageId);
-  } catch (error) {
-    console.warn("Failed to acknowledge messages", error);
-  } finally {
-    delete ackInFlight[chatId];
-
-    const queued = ackQueued[chatId];
-    delete ackQueued[chatId];
-
-    if (queued && compareIds(queued, messageId) > 0) {
-      void acknowledgeChat(chatId, queued);
-    }
-  }
+  listInvalidateTimer = setTimeout(() => {
+    listInvalidateTimer = null;
+    void queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+  }, LIST_INVALIDATE_DEBOUNCE_MS);
 }
 
 function handleMessageCreate(message: ApiMessage): void {
   const currentUserId = auth.user?.profile.id ?? "";
 
   appendMessage(queryClient, message);
-  updateLastMessage(queryClient, message);
+
+  const knownChat = updateLastMessage(queryClient, message);
+
+  if (!knownChat) {
+    scheduleChatListInvalidate();
+  }
 
   if (message.author_id === currentUserId) return;
 
   if (chatSession.activeChatId === message.chat_id) {
-    if (isPageVisible()) {
-      scheduleAck(message.chat_id, message.id);
-    } else {
+    // Visible messages are acknowledged by the message list itself; hidden
+    // tabs need an explicit counter bump.
+    if (!isPageVisible()) {
       bumpUnread(queryClient, message.chat_id);
     }
     return;
@@ -196,9 +163,10 @@ export async function connectSocket(): Promise<void> {
 }
 
 export function disconnectSocket(): void {
-  for (const timer of Object.values(ackTimers)) clearTimeout(timer);
-
-  for (const chatId of Object.keys(ackTimers)) delete ackTimers[chatId];
+  if (listInvalidateTimer) {
+    clearTimeout(listInvalidateTimer);
+    listInvalidateTimer = null;
+  }
 
   if (socket) {
     socket.disconnect();

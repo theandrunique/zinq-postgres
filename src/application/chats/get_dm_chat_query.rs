@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    application::{
-        RequestHandler,
-        chats::{get_chat_query::ChatWithReferences, references::load_referenced_members},
-    },
+    application::{RequestHandler, chats::get_chat_query::ChatWithReferences},
     domain::{
         auth::data::user_repository::UserRepository,
         chats::{Chat, ChatMember, data::ChatMemberRepository, data::ChatRepository},
@@ -51,12 +48,11 @@ impl RequestHandler for GetDMChatCommandHandler {
             .map_err(Error::InternalServerError)?;
 
         if let Some(chat) = existing_dm {
-            let referenced_members = load_referenced_members(
-                self.chat_member_repository.as_ref(),
-                std::slice::from_ref(&chat),
-            )
-            .await
-            .map_err(Error::InternalServerError)?;
+            let referenced_members = self
+                .chat_member_repository
+                .get_members(chat.id, &chat.missing_referenced_member_ids())
+                .await
+                .map_err(Error::InternalServerError)?;
 
             return Ok(ChatWithReferences {
                 chat,

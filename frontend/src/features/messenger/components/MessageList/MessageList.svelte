@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Message } from "$lib/types";
+  import { compareIds } from "$lib/utils/id";
   import { groupMessagesByAuthor, groupMessagesByDate } from "./utils";
   import DateDivider from "./DateDivider.svelte";
   import MessageGroup from "./MessageGroup.svelte";
@@ -9,12 +10,24 @@
   interface Props {
     messages: Message[];
     currentUserId: string;
+    lastReadMessageId?: string;
     maxReadMessageId?: string;
+    onMessageVisible?: (messageId: string) => void;
+    onReachedBottom?: (newestMessageId: string) => void;
     onLoadAroundMessage?: (targetId: string) => Promise<void>;
     onLoadOlder?: () => void;
   }
 
-  let { messages, currentUserId, maxReadMessageId = "", onLoadAroundMessage, onLoadOlder }: Props = $props();
+  let {
+    messages,
+    currentUserId,
+    lastReadMessageId = "",
+    maxReadMessageId = "",
+    onMessageVisible,
+    onReachedBottom,
+    onLoadAroundMessage,
+    onLoadOlder,
+  }: Props = $props();
 
   let dateGroups = $derived(groupMessagesByDate(messages));
   let containerEl = $state<HTMLElement | null>(null);
@@ -28,7 +41,7 @@
   });
 
   $effect(() => {
-    if (maxReadMessageId) manager.setLastReadId(maxReadMessageId);
+    if (lastReadMessageId) manager.setLastReadId(lastReadMessageId);
   });
 
   $effect(() => {
@@ -39,15 +52,30 @@
     if (initialScrolled || !containerEl) return;
     if (messages.length === 0) return;
 
+    const el = containerEl;
+    const newestId = messages[messages.length - 1].id;
+
     const raf = requestAnimationFrame(() => {
-      if (maxReadMessageId) {
-        manager.scrollToMessage(maxReadMessageId, { behavior: "instant" });
+      if (lastReadMessageId && manager.hasElement(lastReadMessageId)) {
+        manager.scrollToMessage(lastReadMessageId, { behavior: "instant" });
       } else {
-        manager.scrollToBottom("instant");
+        // The anchor is not among the loaded messages, so it is either older
+        // than the whole page (everything is unread) or missing entirely.
+        const firstUnread = messages.find((message) => compareIds(message.id, lastReadMessageId) > 0);
+
+        if (lastReadMessageId && firstUnread) {
+          manager.scrollToMessage(firstUnread.id, { behavior: "instant" });
+        } else {
+          manager.scrollToBottom("instant");
+        }
       }
 
       manager.updateButtonState();
       initialScrolled = true;
+
+      // Short chats and anchors close to the end are fully visible right away,
+      // so there is nothing left unread.
+      if (isAtBottom(el)) onReachedBottom?.(newestId);
     });
 
     return () => cancelAnimationFrame(raf);
@@ -58,6 +86,11 @@
 
     if (prevMessagesLength > 0 && len > prevMessagesLength && containerEl) {
       manager.scrollToBottomOnNewMessage();
+
+      if (isAtBottom(containerEl)) {
+        const newestId = messages[len - 1]?.id;
+        if (newestId) onReachedBottom?.(newestId);
+      }
     }
 
     prevMessagesLength = len;
@@ -65,10 +98,16 @@
 
   $effect(() => {
     const el = containerEl;
+
     if (!el) return;
 
     function onScroll() {
       if (!el) return;
+
+      if (isAtBottom(el)) {
+        const newestId = messages[messages.length - 1]?.id;
+        if (newestId) onReachedBottom?.(newestId);
+      }
 
       if (el.scrollTop < 200) {
         onLoadOlder?.();
@@ -79,6 +118,51 @@
 
     return () => el.removeEventListener("scroll", onScroll);
   });
+
+  // Messages are observed only after the initial scroll, otherwise the page
+  // could ack everything that was visible at the top for a single frame.
+  $effect(() => {
+    const el = containerEl;
+    const count = messages.length;
+
+    if (!el || !initialScrolled || count === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || !isFullyVisible(entry)) continue;
+
+          const node = entry.target as HTMLElement;
+          const messageId = node.dataset.messageId;
+
+          if (!messageId || node.dataset.messageAuthorId === currentUserId) continue;
+
+          onMessageVisible?.(messageId);
+        }
+      },
+      { root: el, threshold: [0, 0.5, 1] },
+    );
+
+    const nodes = el.querySelectorAll<HTMLElement>("[data-message-id]");
+    for (const node of nodes) observer.observe(node);
+
+    return () => observer.disconnect();
+  });
+
+  function isAtBottom(el: HTMLElement): boolean {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  }
+
+  function isFullyVisible(entry: IntersectionObserverEntry): boolean {
+    if (entry.intersectionRatio >= 0.999) return true;
+
+    // Messages taller than the viewport can never reach ratio 1, so treat a
+    // message that covers the whole visible area as read.
+    const root = entry.rootBounds;
+    const rect = entry.boundingClientRect;
+
+    return !!root && rect.height > 0 && rect.top <= root.top + 1 && rect.bottom >= root.bottom - 1;
+  }
 
   async function handleNavigateToMessage(fromId: string, toId: string) {
     if (manager.hasElement(toId)) {

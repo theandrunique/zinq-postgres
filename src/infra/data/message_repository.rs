@@ -181,6 +181,7 @@ impl MessageRepository for PostgresMessageRepository {
         chat_id: i64,
         from_message_id: i64,
         to_message_id: i64,
+        limit: i32,
     ) -> Result<Vec<i64>, anyhow::Error> {
         let result: Vec<i64> = sqlx::query_scalar(
             "
@@ -189,11 +190,14 @@ impl MessageRepository for PostgresMessageRepository {
             WHERE chat_id = $1
                 AND id >= $2
                 AND id <= $3
+            ORDER BY id DESC
+            LIMIT $4
             ",
         )
         .bind(chat_id)
         .bind(from_message_id)
         .bind(to_message_id)
+        .bind(limit)
         .fetch_all(&self.pool)
         .await
         .context("Failed to get message ids in range")?;

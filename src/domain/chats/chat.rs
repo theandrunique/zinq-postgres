@@ -86,6 +86,29 @@ impl Chat {
             .cloned()
     }
 
+    /// Users referenced by the last message (its author and the subject of a
+    /// system message) that are no longer among the active chat members.
+    ///
+    /// Their profiles are needed to render the chat list, so they are loaded
+    /// separately from the participant list.
+    pub fn missing_referenced_member_ids(&self) -> Vec<i64> {
+        let Some(last_message) = self.last_message.as_ref() else {
+            return Vec::new();
+        };
+
+        let mut user_ids = vec![last_message.author_id];
+        if let Some(user_id) = last_message.message_type.referenced_user_id() {
+            user_ids.push(user_id);
+        }
+
+        let mut seen = std::collections::HashSet::new();
+        user_ids.retain(|user_id| {
+            seen.insert(*user_id) && !self.members.iter().any(|m| m.user_id == *user_id)
+        });
+
+        user_ids
+    }
+
     pub fn has_member(&self, user_id: i64) -> bool {
         self.get_member(user_id).is_some()
     }

@@ -82,12 +82,23 @@ export function upsertChat(client: QueryClient, chat: Chat): void {
   });
 }
 
-export function updateLastMessage(client: QueryClient, message: ApiMessage): void {
+/**
+ * Updates the chat preview and moves the chat to the top of the list.
+ * Returns `false` when the chat is not cached at all, which means the list has
+ * to be refetched for the chat to appear in the right place.
+ */
+export function updateLastMessage(client: QueryClient, message: ApiMessage): boolean {
+  const list = client.getQueryData<ChatsData>(chatKeys.list());
+  const inList = list?.pages.some((page) => page.chats.some((chat) => chat.id === message.chat_id)) ?? false;
+  const inDetail = Boolean(client.getQueryData<Chat>(chatKeys.detail(message.chat_id)));
+
   patchChat(client, message.chat_id, (chat) => ({
     ...chat,
     last_message: toLastMessageInfo(message),
   }));
   touchChat(client, message.chat_id);
+
+  return inList || inDetail;
 }
 
 export function patchLastMessageIfCurrent(client: QueryClient, message: ApiMessage): void {

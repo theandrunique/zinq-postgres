@@ -19,16 +19,23 @@ use crate::{
 #[serde_as]
 #[derive(Deserialize)]
 pub struct AckMessagesRequest {
-    #[serde_as(as = "DisplayFromStr")]
-    pub last_read_message_id: i64,
+    /// Advances the read pointer. Omitted when only individual messages are
+    /// acknowledged while scrolling.
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    #[serde(default)]
+    pub last_read_message_id: Option<i64>,
     #[serde(default)]
     pub acks: Vec<AckInputRequest>,
 }
 
+#[serde_as]
 #[derive(Deserialize)]
 pub struct AckInputRequest {
+    #[serde_as(as = "DisplayFromStr")]
     pub message_id: i64,
-    pub acked_at: DateTime<Utc>,
+    /// Server time is used when the client does not provide a timestamp.
+    #[serde(default)]
+    pub acked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]

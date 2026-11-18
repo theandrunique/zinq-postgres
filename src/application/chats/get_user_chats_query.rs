@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::{
-    application::{RequestHandler, chats::references::load_referenced_members},
+    application::RequestHandler,
     domain::chats::{
         Chat, ChatMember,
-        data::{ChatPageCursor, ChatRepository},
+        data::{ChatMemberRepository, ChatPageCursor, ChatRepository},
     },
     error::Error,
     state::AppState,
@@ -33,7 +33,7 @@ pub struct GetUserChatsQueryResult {
 
 pub struct GetUserChatsQueryHandler {
     chat_repository: Arc<dyn ChatRepository>,
-    chat_member_repository: Arc<dyn crate::domain::chats::data::ChatMemberRepository>,
+    chat_member_repository: Arc<dyn ChatMemberRepository>,
 }
 
 impl GetUserChatsQueryHandler {
@@ -59,10 +59,21 @@ impl RequestHandler for GetUserChatsQueryHandler {
             .await
             .map_err(Error::InternalServerError)?;
 
-        let referenced_members =
-            load_referenced_members(self.chat_member_repository.as_ref(), &page.chats)
-                .await
-                .map_err(Error::InternalServerError)?;
+        let referenced_pairs: Vec<(i64, i64)> = page
+            .chats
+            .iter()
+            .flat_map(|chat| {
+                chat.missing_referenced_member_ids()
+                    .into_iter()
+                    .map(move |user_id| (chat.id, user_id))
+            })
+            .collect();
+
+        let referenced_members = self
+            .chat_member_repository
+            .get_members_for_chats(&referenced_pairs)
+            .await
+            .map_err(Error::InternalServerError)?;
 
         Ok(GetUserChatsQueryResult {
             chats: page.chats,

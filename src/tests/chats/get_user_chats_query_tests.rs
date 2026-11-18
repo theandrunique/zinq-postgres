@@ -110,7 +110,7 @@ async fn test_get_user_chats_returns_chats() {
                     "DM should contain current user"
                 );
                 assert!(
-                    member_ids.len() >= 1 && member_ids.len() <= 2,
+                    !member_ids.is_empty() && member_ids.len() <= 2,
                     "DM chat should have 1 or 2 members (self-DM or with other user)"
                 );
             }

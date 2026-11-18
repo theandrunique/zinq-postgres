@@ -22,4 +22,14 @@ pub trait ChatMemberRepository: Send + Sync {
         chat_id: i64,
         user_ids: &[i64],
     ) -> Result<HashMap<i64, ChatMember>, anyhow::Error>;
+
+    /// Загружает профили по парам `(chat_id, user_id)` одним запросом.
+    ///
+    /// Результат ключуется по `user_id`, так как профильные данные пользователя
+    /// одинаковы во всех чатах. `is_leave` не фильтруется по тем же причинам,
+    /// что и в [`ChatMemberRepository::get_members`].
+    async fn get_members_for_chats(
+        &self,
+        pairs: &[(i64, i64)],
+    ) -> Result<HashMap<i64, ChatMember>, anyhow::Error>;
 }

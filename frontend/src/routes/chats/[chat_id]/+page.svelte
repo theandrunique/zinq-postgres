@@ -9,7 +9,7 @@
   import { messagesQueryOptions } from "$lib/queries/messenger/queries.ts";
   import { chatKeys } from "$lib/queries/messenger/query-keys.ts";
   import { auth } from "$lib/auth.svelte.ts";
-  import { acknowledgeChat } from "$services/socket.svelte.ts";
+  import { ackMessageVisible, ackReachedBottom, flushChatAcks } from "$services/ack-queue.ts";
   import { chatSession } from "$lib/state/chat-session.svelte.ts";
   import { getChatDisplayName } from "$features/messenger/model/chatHelpers.ts";
   import { normalizeMessages } from "$features/messenger/model/messageHelpers.ts";
@@ -53,25 +53,18 @@
   });
 
   $effect(() => {
-    const lastMessage = rawMessages[rawMessages.length - 1];
+    const id = chatId;
 
-    if (!chat || !lastMessage) return;
-
-    void acknowledgeChat(chatId, lastMessage.id);
+    return () => void flushChatAcks(id);
   });
 
-  $effect(() => {
-    function handleVisibility() {
-      if (document.visibilityState !== "visible") return;
+  function handleMessageVisible(messageId: string) {
+    ackMessageVisible(chatId, messageId);
+  }
 
-      const lastMessage = rawMessages[rawMessages.length - 1];
-      if (lastMessage) void acknowledgeChat(chatId, lastMessage.id);
-    }
-
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  });
+  function handleReachedBottom(messageId: string) {
+    ackReachedBottom(chatId, messageId);
+  }
 
   async function handleSend(content: string) {
     sendError = null;
@@ -132,7 +125,10 @@
           <MessageList
             {messages}
             {currentUserId}
+            lastReadMessageId={chat.last_read_message_id ?? ""}
             maxReadMessageId={chat.max_read_message_id ?? ""}
+            onMessageVisible={handleMessageVisible}
+            onReachedBottom={handleReachedBottom}
             onLoadOlder={handleLoadOlder}
           />
         {/key}

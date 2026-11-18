@@ -482,7 +482,10 @@ impl ChatRepository for PostgresChatRepository {
         message_id: i64,
     ) -> Result<(), anyhow::Error> {
         sqlx::query(
-            "UPDATE chat_members SET last_read_message_id = $1 WHERE user_id = $2 AND chat_id = $3",
+            "UPDATE chat_members
+             SET last_read_message_id = $1
+             WHERE user_id = $2 AND chat_id = $3
+               AND (last_read_message_id IS NULL OR last_read_message_id < $1)",
         )
         .bind(message_id)
         .bind(user_id)

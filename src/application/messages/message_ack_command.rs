@@ -1,6 +1,6 @@
-use std::{cmp, sync::Arc};
+use std::{cmp, collections::BTreeMap, sync::Arc};
 
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Utc};
 
 use crate::{
     application::RequestHandler,
@@ -15,16 +15,23 @@ use crate::{
     state::AppState,
 };
 
+/// Upper bound of acks that are synthesized for a single read pointer jump.
+/// The pointer itself always advances, only the per-message history is capped.
+const ACK_FILL_LIMIT: i32 = 1000;
+
 pub struct MessageAckCommand {
     pub current_user_id: i64,
     pub chat_id: i64,
-    pub last_read_message_id: i64,
+    /// Moves the read pointer forward. `None` means "only store individual
+    /// acks", which is what scrolling through the chat sends.
+    pub last_read_message_id: Option<i64>,
     pub acks: Vec<MessageAckInput>,
 }
 
 pub struct MessageAckInput {
     pub message_id: i64,
-    pub acked_at: DateTime<Utc>,
+    /// When the message was seen. Falls back to the server time when omitted.
+    pub acked_at: Option<DateTime<Utc>>,
 }
 
 pub struct MessageAckCommandHandler {
@@ -54,7 +61,7 @@ impl RequestHandler for MessageAckCommandHandler {
     type Output = ();
     type Error = Error;
 
-    async fn handle(&self, mut request: Self::Request) -> Result<Self::Output, Self::Error> {
+    async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
         let chat = self
             .chat_loader
             .load(
@@ -73,50 +80,76 @@ impl RequestHandler for MessageAckCommandHandler {
                 chat_id: request.chat_id,
             })?;
 
-        let current_last_read = member.last_read_message_id.unwrap_or(0);
-        if request.last_read_message_id <= current_last_read {
-            return Ok(());
-        }
-
-        self.chat_repository
-            .update_last_read_message_id(
-                request.current_user_id,
-                request.chat_id,
-                request.last_read_message_id,
-            )
-            .await?;
-
-        let mut acks: Vec<MessageAck> = Vec::new();
         let now = Utc::now();
-        let min_id = self.id_gen.min_id_for_days_ago(7);
-        let range_start = cmp::max(current_last_read + 1, min_id);
+        let current_last_read = member.last_read_message_id.unwrap_or(0);
 
-        if range_start <= request.last_read_message_id {
-            let message_ids = self
-                .message_repository
-                .get_message_ids_in_range(
-                    request.chat_id,
-                    range_start,
-                    request.last_read_message_id,
-                )
-                .await?;
+        // Client clocks can be behind or ahead of the server, so timestamps are
+        // clamped to the moment the request is processed.
+        let explicit: BTreeMap<i64, DateTime<Utc>> =
+            request
+                .acks
+                .into_iter()
+                .fold(BTreeMap::new(), |mut acc, ack| {
+                    let acked_at = ack.acked_at.filter(|at| *at <= now).unwrap_or(now);
 
-            request.acks.sort_by_key(|a| a.message_id);
+                    acc.entry(ack.message_id)
+                        .and_modify(|existing| *existing = (*existing).min(acked_at))
+                        .or_insert(acked_at);
 
-            for message_id in message_ids {
-                let created_at = request
-                    .acks
-                    .iter()
-                    .find(|a| a.message_id >= message_id)
-                    .map(|a| a.acked_at)
-                    .unwrap_or(now);
-
-                acks.push(MessageAck {
-                    chat_id: request.chat_id,
-                    message_id,
-                    user_id: request.current_user_id,
-                    created_at,
+                    acc
                 });
+
+        let advance_to = request
+            .last_read_message_id
+            .filter(|last_read| *last_read > current_last_read);
+
+        let mut acks: Vec<MessageAck> = explicit
+            .iter()
+            .map(|(message_id, acked_at)| MessageAck {
+                chat_id: request.chat_id,
+                message_id: *message_id,
+                user_id: request.current_user_id,
+                created_at: *acked_at,
+            })
+            .collect();
+
+        if let Some(last_read_message_id) = advance_to {
+            // Jumping the pointer means every message up to it is read, so the
+            // missing per-message acks are synthesized from the oldest moment
+            // the next seen message was acknowledged.
+            let min_id = self.id_gen.min_id_for_days_ago(7);
+            let range_start = cmp::max(current_last_read + 1, min_id);
+
+            if range_start <= last_read_message_id {
+                let message_ids = self
+                    .message_repository
+                    .get_message_ids_in_range(
+                        request.chat_id,
+                        range_start,
+                        last_read_message_id,
+                        ACK_FILL_LIMIT,
+                    )
+                    .await
+                    .map_err(Error::InternalServerError)?;
+
+                for message_id in message_ids {
+                    if explicit.contains_key(&message_id) {
+                        continue;
+                    }
+
+                    let created_at = explicit
+                        .range(message_id..)
+                        .next()
+                        .map(|(_, acked_at)| *acked_at)
+                        .unwrap_or(now);
+
+                    acks.push(MessageAck {
+                        chat_id: request.chat_id,
+                        message_id,
+                        user_id: request.current_user_id,
+                        created_at,
+                    });
+                }
             }
         }
 
@@ -124,13 +157,23 @@ impl RequestHandler for MessageAckCommandHandler {
             self.message_ack_repository.bulk_upsert(&acks).await?;
         }
 
-        self.mediator
-            .publish(&DomainEvent::MessageAck {
-                user_id: request.current_user_id,
-                chat_id: request.chat_id,
-                last_read_message_id: request.last_read_message_id,
-            })
-            .await?;
+        if let Some(last_read_message_id) = advance_to {
+            self.chat_repository
+                .update_last_read_message_id(
+                    request.current_user_id,
+                    request.chat_id,
+                    last_read_message_id,
+                )
+                .await?;
+
+            self.mediator
+                .publish(&DomainEvent::MessageAck {
+                    user_id: request.current_user_id,
+                    chat_id: request.chat_id,
+                    last_read_message_id,
+                })
+                .await?;
+        }
 
         Ok(())
     }

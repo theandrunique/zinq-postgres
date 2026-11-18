@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::{
-    application::{RequestHandler, chats::references::load_referenced_members},
+    application::RequestHandler,
     domain::chats::{
         Chat, ChatMember,
         data::{ChatMemberRepository, ChatRepository},
@@ -59,12 +59,11 @@ impl RequestHandler for GetChatQueryHandler {
             });
         }
 
-        let referenced_members = load_referenced_members(
-            self.chat_member_repository.as_ref(),
-            std::slice::from_ref(&chat),
-        )
-        .await
-        .map_err(Error::InternalServerError)?;
+        let referenced_members = self
+            .chat_member_repository
+            .get_members(chat.id, &chat.missing_referenced_member_ids())
+            .await
+            .map_err(Error::InternalServerError)?;
 
         Ok(ChatWithReferences {
             chat,
