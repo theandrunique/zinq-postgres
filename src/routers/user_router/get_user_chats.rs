@@ -122,10 +122,7 @@ pub async fn get_user_chats(
         .map(|chat| ChatSchema::from_chat_for_user(chat, claims.sub, &referenced_members))
         .collect::<Result<Vec<_>, anyhow::Error>>()?;
 
-    Ok(Json(UserChatsPageSchema {
-        chats,
-        next_cursor,
-    }))
+    Ok(Json(UserChatsPageSchema { chats, next_cursor }))
 }
 
 #[cfg(test)]
