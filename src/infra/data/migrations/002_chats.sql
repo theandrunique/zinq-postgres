@@ -14,14 +14,7 @@ CREATE TABLE IF NOT EXISTS chats (
     created_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_chats_last_message ON chats(last_message_created_at DESC);
-
--- Keyset pagination of a user's chats is ordered by
--- `last_message_created_at DESC NULLS LAST, id DESC`.
---
--- The index above uses the implicit `NULLS FIRST` ordering for DESC, so it
--- cannot serve this ordering.
-CREATE INDEX IF NOT EXISTS idx_chats_last_message_nulls_last
+CREATE INDEX IF NOT EXISTS idx_chats_last_message
     ON chats (last_message_created_at DESC NULLS LAST, id DESC);
 
 CREATE TABLE IF NOT EXISTS private_chats (

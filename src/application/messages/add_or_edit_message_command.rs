@@ -39,8 +39,6 @@ pub struct AddOrEditMessageCommandResult {
     pub message: Message,
     pub attachments: Vec<Attachment>,
     pub initiator: ChatMember,
-    /// Пользователь, на которого ссылается системное сообщение, если
-    /// редактируется мета-сообщение.
     pub subject: Option<ChatMember>,
 }
 
@@ -67,14 +65,12 @@ impl AddOrEditMessageCommandHandler {
         }
     }
 
-    /// Профиль пользователя, на которого ссылается системное сообщение, если
-    /// он отличается от автора.
     async fn load_subject(
         &self,
         message: &Message,
         initiator: &ChatMember,
     ) -> Result<Option<ChatMember>, Error> {
-        let Some(user_id) = message.message_type.referenced_user_id() else {
+        let Some(user_id) = message.message_type.subject_user_id() else {
             return Ok(None);
         };
 
@@ -83,7 +79,7 @@ impl AddOrEditMessageCommandHandler {
         }
 
         self.chat_member_repository
-            .get_members(message.chat_id, &[user_id])
+            .get_members_by_ids(message.chat_id, &[user_id])
             .await
             .map_err(Error::InternalServerError)?
             .remove(&user_id)

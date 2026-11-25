@@ -44,9 +44,7 @@ pub struct CreateMetaMessageRequest {
 }
 
 impl MessageType {
-    /// Пользователь, на которого ссылается системное сообщение
-    /// (`MEMBER_ADD`/`MEMBER_REMOVE`/`MEMBER_LEAVE`).
-    pub fn referenced_user_id(&self) -> Option<i64> {
+    pub fn subject_user_id(&self) -> Option<i64> {
         match self {
             MessageType::MemberAdd { user_id }
             | MessageType::MemberRemove { user_id }

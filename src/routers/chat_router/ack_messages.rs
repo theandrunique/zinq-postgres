@@ -22,9 +22,7 @@ pub struct AckMessagesRequest {
     /// Advances the read pointer. Omitted when only individual messages are
     /// acknowledged while scrolling.
     #[serde_as(as = "Option<DisplayFromStr>")]
-    #[serde(default)]
     pub last_read_message_id: Option<i64>,
-    #[serde(default)]
     pub acks: Vec<AckInputRequest>,
 }
 
@@ -33,8 +31,6 @@ pub struct AckMessagesRequest {
 pub struct AckInputRequest {
     #[serde_as(as = "DisplayFromStr")]
     pub message_id: i64,
-    /// When the message was actually seen. Required: a receipt without the
-    /// moment it happened is of no use.
     pub acked_at: DateTime<Utc>,
 }
 

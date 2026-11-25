@@ -15,11 +15,6 @@ pub async fn create_pool(url: &str) -> Result<Pool<Postgres>, sqlx::Error> {
     Ok(pool)
 }
 
-/// Applies the migrations embedded in `src/infra/data/migrations`.
-///
-/// Until the project reaches MVP the schema is kept in two squashed migrations
-/// (`001_auth.sql`, `002_chats.sql`). Change them in place and recreate the
-/// local database (`docker compose down -v`) instead of adding new files.
 pub async fn run_migrations(pool: &Pool<Postgres>) -> Result<(), sqlx::Error> {
     tracing::info!("Running migrations...");
 

@@ -8,8 +8,7 @@ use crate::{
     domain::{
         chats::data::ChatRepository,
         events::{DomainEvent, DomainEventHandler},
-    },
-    routers::schemas::{GatewayEventSchema, common::MessageSchema},
+    }, routers::schemas::{GatewayEventSchema, common::{ChatSchema, MessageSchema}},
 };
 
 pub struct EventPublisher {
@@ -74,7 +73,7 @@ impl DomainEventHandler for EventPublisher {
             DomainEvent::ChatCreate { chat } => (
                 {
                     GatewayEventSchema::ChatCreate {
-                        chat: crate::routers::schemas::common::ChatSchema::from_chat(
+                        chat: ChatSchema::from_chat(
                             chat.clone(),
                             &HashMap::new(),
                         )?,

@@ -139,9 +139,6 @@ impl MessageTypeSchema {
 }
 
 impl MessageSchema {
-    /// Собирает схему для одиночного сообщения, когда известны только автор и,
-    /// для системных сообщений, пользователь, на которого они ссылаются
-    /// (ответ на POST/PUT и socket-события).
     pub fn from_message(
         message: Message,
         attachments: Vec<Attachment>,

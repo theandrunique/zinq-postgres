@@ -50,7 +50,7 @@ impl RequestHandler for GetDMChatCommandHandler {
         if let Some(chat) = existing_dm {
             let referenced_members = self
                 .chat_member_repository
-                .get_members(chat.id, &chat.missing_referenced_member_ids())
+                .get_members_by_ids(chat.id, &chat.member_ids_for_last_message())
                 .await
                 .map_err(Error::InternalServerError)?;
 

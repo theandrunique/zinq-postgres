@@ -115,7 +115,6 @@ pub async fn get_user_chats(
 
     let referenced_members = result.referenced_members;
     let next_cursor = result.next_cursor.map(encode_cursor);
-    let has_more = next_cursor.is_some();
 
     let chats = result
         .chats
@@ -126,7 +125,6 @@ pub async fn get_user_chats(
     Ok(Json(UserChatsPageSchema {
         chats,
         next_cursor,
-        has_more,
     }))
 }
 

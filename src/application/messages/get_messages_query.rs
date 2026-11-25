@@ -27,8 +27,6 @@ pub struct GetMessagesQuery {
 pub struct GetMessagesQueryResult {
     pub messages: Vec<Message>,
     pub attachments: HashMap<i64, Vec<Attachment>>,
-    /// Профили участников, на которых ссылаются сообщения: авторы и
-    /// пользователи из системных сообщений (`MEMBER_ADD` и т.п.).
     pub members: HashMap<i64, ChatMember>,
 }
 
@@ -96,7 +94,7 @@ impl RequestHandler for GetMessagesQueryHandler {
             .flat_map(|message| {
                 [
                     Some(message.author_id),
-                    message.message_type.referenced_user_id(),
+                    message.message_type.subject_user_id(),
                 ]
                 .into_iter()
                 .flatten()
@@ -113,7 +111,7 @@ impl RequestHandler for GetMessagesQueryHandler {
             },
             async {
                 self.chat_member_repository
-                    .get_members(request.chat_id, &member_ids)
+                    .get_members_by_ids(request.chat_id, &member_ids)
                     .await
             },
         )

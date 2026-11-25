@@ -69,7 +69,6 @@ impl LastMessageInfoSchema {
 pub struct UserChatsPageSchema {
     pub chats: Vec<ChatSchema>,
     pub next_cursor: Option<String>,
-    pub has_more: bool,
 }
 
 #[derive(Serialize)]

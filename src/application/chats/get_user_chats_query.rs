@@ -25,9 +25,6 @@ pub struct GetUserChatsQuery {
 pub struct GetUserChatsQueryResult {
     pub chats: Vec<Chat>,
     pub next_cursor: Option<ChatPageCursor>,
-    /// Профили, на которые ссылаются последние сообщения чатов, но которых нет
-    /// среди активных участников (вышедшие авторы и участники системных
-    /// сообщений).
     pub referenced_members: HashMap<i64, ChatMember>,
 }
 
@@ -63,7 +60,7 @@ impl RequestHandler for GetUserChatsQueryHandler {
             .chats
             .iter()
             .flat_map(|chat| {
-                chat.missing_referenced_member_ids()
+                chat.member_ids_for_last_message()
                     .into_iter()
                     .map(move |user_id| (chat.id, user_id))
             })

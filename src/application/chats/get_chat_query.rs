@@ -20,8 +20,6 @@ pub struct GetChatQuery {
 #[derive(Debug, Clone)]
 pub struct ChatWithReferences {
     pub chat: Chat,
-    /// Профили, на которые ссылается последнее сообщение чата, но которых нет
-    /// среди активных участников.
     pub referenced_members: HashMap<i64, ChatMember>,
 }
 
@@ -61,7 +59,7 @@ impl RequestHandler for GetChatQueryHandler {
 
         let referenced_members = self
             .chat_member_repository
-            .get_members(chat.id, &chat.missing_referenced_member_ids())
+            .get_members_by_ids(chat.id, &chat.member_ids_for_last_message())
             .await
             .map_err(Error::InternalServerError)?;
 
