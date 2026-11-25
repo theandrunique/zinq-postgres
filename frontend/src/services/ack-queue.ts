@@ -8,11 +8,12 @@ import { compareIds, maxId } from "$lib/utils/id";
 const ACK_DEBOUNCE_MS = 300;
 const ACK_RETRY_DELAY_MS = 2_000;
 const ACK_MAX_RETRIES = 3;
-const ACK_MAX_BATCH = 100;
+/** Must match `MAX_ACKS_PER_REQUEST` on the server. */
+const ACK_MAX_BATCH = 30;
 
 interface ChatAckState {
   /** Messages that were fully visible and still need an individual ack. */
-  pending: Set<string>;
+  pending: Map<string, string>;
   /** Messages already acknowledged during this session. */
   sent: Set<string>;
   /** Read pointer to advance once the newest message is visible. */
@@ -30,7 +31,7 @@ function getState(chatId: string): ChatAckState {
 
   if (!state) {
     state = {
-      pending: new Set(),
+      pending: new Map(),
       sent: new Set(),
       pointer: null,
       timer: null,
@@ -93,7 +94,7 @@ export function ackMessageVisible(chatId: string, messageId: string): void {
 
   if (state.pending.has(messageId) || state.sent.has(messageId)) return;
 
-  state.pending.add(messageId);
+  state.pending.set(messageId, new Date().toISOString());
 
   if (state.pending.size >= ACK_MAX_BATCH) {
     void flushChatAcks(chatId);
@@ -123,7 +124,7 @@ export async function flushChatAcks(chatId: string): Promise<void> {
 
   const lastRead = currentLastRead(chatId);
   const pointer = state.pointer && isNewer(state.pointer, lastRead) ? state.pointer : null;
-  const acks = [...state.pending].filter((messageId) => isNewer(messageId, lastRead));
+  const acks = [...state.pending].filter(([messageId]) => isNewer(messageId, lastRead));
 
   state.pointer = null;
   state.pending.clear();
@@ -144,14 +145,14 @@ export async function flushChatAcks(chatId: string): Promise<void> {
   try {
     await ackMessages(chatId, {
       lastReadMessageId: pointer ?? undefined,
-      acks: batch,
+      acks: batch.map(([messageId, ackedAt]) => ({ messageId, ackedAt })),
     });
 
     state.retries = 0;
 
-    for (const messageId of batch) state.sent.add(messageId);
+    for (const [messageId] of batch) state.sent.add(messageId);
 
-    for (const messageId of rest) state.pending.add(messageId);
+    for (const [messageId, ackedAt] of rest) state.pending.set(messageId, ackedAt);
 
     if (pointer) {
       markChatRead(queryClient, chatId, pointer);
@@ -167,7 +168,7 @@ export async function flushChatAcks(chatId: string): Promise<void> {
     if (state.retries < ACK_MAX_RETRIES) {
       state.retries += 1;
 
-      for (const messageId of acks) state.pending.add(messageId);
+      for (const [messageId, ackedAt] of acks) state.pending.set(messageId, ackedAt);
       state.pointer = maxId([state.pointer, pointer]);
 
       state.timer = setTimeout(() => {

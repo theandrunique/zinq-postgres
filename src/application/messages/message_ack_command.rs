@@ -1,4 +1,8 @@
-use std::{cmp, collections::BTreeMap, sync::Arc};
+use std::{
+    cmp,
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use chrono::{DateTime, Utc};
 
@@ -17,7 +21,11 @@ use crate::{
 
 /// Upper bound of acks that are synthesized for a single read pointer jump.
 /// The pointer itself always advances, only the per-message history is capped.
-const ACK_FILL_LIMIT: i32 = 1000;
+const ACK_FILL_LIMIT: i32 = 30;
+
+/// Upper bound of individual acks accepted from a client in one request.
+/// Mirrors `ACK_MAX_BATCH` in the web client.
+pub const MAX_ACKS_PER_REQUEST: usize = 30;
 
 pub struct MessageAckCommand {
     pub current_user_id: i64,
@@ -30,8 +38,22 @@ pub struct MessageAckCommand {
 
 pub struct MessageAckInput {
     pub message_id: i64,
-    /// When the message was seen. Falls back to the server time when omitted.
-    pub acked_at: Option<DateTime<Utc>>,
+    /// When the message was actually seen. Required: a receipt without the
+    /// moment it happened is of no use.
+    pub acked_at: DateTime<Utc>,
+}
+
+fn validate_acks_limit(acks: &[MessageAckInput]) -> Result<(), Error> {
+    if acks.len() > MAX_ACKS_PER_REQUEST {
+        return Err(Error::InvalidRequestBody(HashMap::from([(
+            "acks".to_string(),
+            vec![format!(
+                "at most {MAX_ACKS_PER_REQUEST} acks per request are allowed"
+            )],
+        )])));
+    }
+
+    Ok(())
 }
 
 pub struct MessageAckCommandHandler {
@@ -62,6 +84,8 @@ impl RequestHandler for MessageAckCommandHandler {
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
+        validate_acks_limit(&request.acks)?;
+
         let chat = self
             .chat_loader
             .load(
@@ -82,22 +106,25 @@ impl RequestHandler for MessageAckCommandHandler {
 
         let now = Utc::now();
         let current_last_read = member.last_read_message_id.unwrap_or(0);
+        let min_id = self.id_gen.min_id_for_days_ago(7);
 
-        // Client clocks can be behind or ahead of the server, so timestamps are
-        // clamped to the moment the request is processed.
-        let explicit: BTreeMap<i64, DateTime<Utc>> =
-            request
-                .acks
-                .into_iter()
-                .fold(BTreeMap::new(), |mut acc, ack| {
-                    let acked_at = ack.acked_at.filter(|at| *at <= now).unwrap_or(now);
+        // Acks below the read pointer are already covered by it, and acks older
+        // than the receipt window are dropped.
+        let explicit: BTreeMap<i64, DateTime<Utc>> = request
+            .acks
+            .into_iter()
+            .filter(|ack| ack.message_id > current_last_read && ack.message_id >= min_id)
+            .fold(BTreeMap::new(), |mut acc, ack| {
+                // Client clocks can run ahead of the server, so future
+                // timestamps are clamped to the moment the request is processed.
+                let acked_at = ack.acked_at.min(now);
 
-                    acc.entry(ack.message_id)
-                        .and_modify(|existing| *existing = (*existing).min(acked_at))
-                        .or_insert(acked_at);
+                acc.entry(ack.message_id)
+                    .and_modify(|existing| *existing = (*existing).min(acked_at))
+                    .or_insert(acked_at);
 
-                    acc
-                });
+                acc
+            });
 
         let advance_to = request
             .last_read_message_id
@@ -117,7 +144,6 @@ impl RequestHandler for MessageAckCommandHandler {
             // Jumping the pointer means every message up to it is read, so the
             // missing per-message acks are synthesized from the oldest moment
             // the next seen message was acknowledged.
-            let min_id = self.id_gen.min_id_for_days_ago(7);
             let range_start = cmp::max(current_last_read + 1, min_id);
 
             if range_start <= last_read_message_id {

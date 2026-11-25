@@ -51,17 +51,26 @@ export async function sendMessage(chatId: string, request: SendMessageRequest): 
   return data;
 }
 
+export interface AckMessageAck {
+  messageId: string;
+  /** When the message was actually seen, ISO 8601. */
+  ackedAt: string;
+}
+
 export interface AckMessagesParams {
   /** Moves the read pointer forward; omitted for per-message acks. */
   lastReadMessageId?: string;
   /** Individual messages seen in the viewport. */
-  acks?: string[];
+  acks?: AckMessageAck[];
 }
 
 export async function ackMessages(chatId: string, params: AckMessagesParams = {}): Promise<void> {
   await api.put(`/chats/${chatId}/messages/acks`, {
     last_read_message_id: params.lastReadMessageId,
-    acks: (params.acks ?? []).map((messageId) => ({ message_id: messageId })),
+    acks: (params.acks ?? []).map(({ messageId, ackedAt }) => ({
+      message_id: messageId,
+      acked_at: ackedAt,
+    })),
   });
 }
 

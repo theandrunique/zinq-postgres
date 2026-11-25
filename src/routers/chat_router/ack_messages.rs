@@ -33,9 +33,9 @@ pub struct AckMessagesRequest {
 pub struct AckInputRequest {
     #[serde_as(as = "DisplayFromStr")]
     pub message_id: i64,
-    /// Server time is used when the client does not provide a timestamp.
-    #[serde(default)]
-    pub acked_at: Option<DateTime<Utc>>,
+    /// When the message was actually seen. Required: a receipt without the
+    /// moment it happened is of no use.
+    pub acked_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize)]
