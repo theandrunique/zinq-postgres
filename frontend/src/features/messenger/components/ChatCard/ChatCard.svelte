@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, CheckCheck, Users } from "@lucide/svelte";
+  import { Bookmark, Check, CheckCheck, Users } from "@lucide/svelte";
   import { Avatar } from "$lib/components/ui";
   import type { Chat } from "$lib/types";
   import {
@@ -24,7 +24,7 @@
 
   let saved = $derived(isSavedMessages(chat, currentUserId));
   let displayName = $derived(getChatDisplayName(chat, currentUserId));
-  let avatarSrc = $derived(saved ? "/bookmark.png" : getChatAvatar(chat, currentUserId));
+  let avatarSrc = $derived(getChatAvatar(chat, currentUserId));
   let avatarFallback = $derived(avatarSrc ? "" : getChatAvatarFallback(chat, currentUserId));
 
   let isOwnLastMessage = $derived(chat.last_message?.author_id === currentUserId);
@@ -53,7 +53,12 @@
 >
   <div class="shrink-0">
     {#if saved}
-      <Avatar src="/bookmark.png" alt="Избранное" fallback="" class="h-10 w-10" />
+      <div
+        class="flex h-10 w-10 items-center justify-center rounded-(--avatar-radius) border border-(color:--avatar-border) bg-(--color-background-brand) text-(--color-text-on-brand)"
+        title="Saved messages"
+      >
+        <Bookmark class="h-5 w-5" fill="currentColor" />
+      </div>
     {:else}
       <Avatar src={avatarSrc} alt={displayName} fallback={avatarFallback} class="h-10 w-10" />
     {/if}
@@ -90,7 +95,7 @@
         {#if lastMessagePreview}
           {lastMessagePreview}
         {:else}
-          <span class="italic">Нет сообщений</span>
+          <span class="italic">No messages</span>
         {/if}
       </div>
 

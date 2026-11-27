@@ -26,7 +26,7 @@
   {#if imageUrl}
     <div class="flex flex-col items-center gap-2">
       <div class="opacity-80">{text}</div>
-      <Avatar src={imageUrl} alt="Изображение чата" fallback="" class="h-24 w-24" />
+      <Avatar src={imageUrl} alt="Chat image" fallback="" class="h-24 w-24" />
     </div>
   {:else}
     <div class="opacity-80">{text}</div>

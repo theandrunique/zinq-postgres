@@ -52,7 +52,7 @@ export function groupMessagesByDate(messages: Message[]): [string, Message[]][] 
 }
 
 export function formatMessageTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("ru-RU", {
+  return new Date(iso).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -62,14 +62,14 @@ export function formatDateSeparator(iso: string): string {
   const date = new Date(iso);
   const now = new Date();
 
-  if (date.toDateString() === now.toDateString()) return "Сегодня";
+  if (date.toDateString() === now.toDateString()) return "Today";
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (date.toDateString() === yesterday.toDateString()) return "Вчера";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
 
-  return date.toLocaleDateString("ru-RU", {
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

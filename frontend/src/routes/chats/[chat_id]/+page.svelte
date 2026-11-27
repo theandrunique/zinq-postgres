@@ -11,6 +11,7 @@
   import { auth } from "$lib/auth.svelte.ts";
   import { ackMessageVisible, ackReachedBottom, flushChatAcks } from "$services/ack-queue.ts";
   import { chatSession } from "$lib/state/chat-session.svelte.ts";
+  import { userProfileModal } from "$services/userProfileModal.svelte.ts";
   import { getChatDisplayName } from "$features/messenger/model/chatHelpers.ts";
   import { normalizeMessages } from "$features/messenger/model/messageHelpers.ts";
   import { ChatHeader, MessageComposer, MessageList } from "$features/messenger";
@@ -34,7 +35,7 @@
   const chat = $derived(chatQuery.data ?? null);
   const rawMessages = $derived(messagesQuery.data ?? []);
   const messages = $derived(chat ? normalizeMessages(rawMessages) : []);
-  const displayName = $derived(chat ? getChatDisplayName(chat, currentUserId) : "Чат");
+  const displayName = $derived(chat ? getChatDisplayName(chat, currentUserId) : "Chat");
 
   let sendError = $state<string | null>(null);
 
@@ -66,13 +67,17 @@
     ackReachedBottom(chatId, messageId);
   }
 
+  function handleAuthorClick(userId: string) {
+    userProfileModal.open(userId);
+  }
+
   async function handleSend(content: string) {
     sendError = null;
 
     try {
       await sendMutation.mutateAsync(content);
     } catch (cause) {
-      sendError = cause instanceof ApiError ? cause.message : "Не удалось отправить сообщение";
+      sendError = cause instanceof ApiError ? cause.message : "Couldn't send the message.";
       throw cause;
     }
   }
@@ -91,14 +96,14 @@
 {#if chatQuery.isPending}
   <div class="flex h-full items-center justify-center gap-(--space-1)">
     <Loader size="md" />
-    <span class="text-(length:--font-size-sm) text-(--color-text-muted)">Загрузка чата…</span>
+    <span class="text-(length:--font-size-sm) text-(--color-text-muted)">Loading chat…</span>
   </div>
 {:else if chatQuery.isError}
   <div class="flex h-full flex-col items-center justify-center gap-(--space-1) px-(--space-4) text-center">
     <p class="text-(length:--font-size-sm) text-(--color-text-muted)">
-      {chatQuery.error instanceof ApiError ? chatQuery.error.message : "Не удалось загрузить чат"}
+      {chatQuery.error instanceof ApiError ? chatQuery.error.message : "Couldn't load the chat."}
     </p>
-    <Button variant="secondary" onclick={() => chatQuery.refetch()}>Повторить</Button>
+    <Button variant="secondary" onclick={() => chatQuery.refetch()}>Retry</Button>
   </div>
 {:else if chat}
   <div class="flex h-full min-h-0 flex-col">
@@ -108,17 +113,17 @@
       {#if messagesQuery.isPending}
         <div class="flex h-full items-center justify-center gap-(--space-1)">
           <Loader size="sm" />
-          <span class="text-(length:--font-size-sm) text-(--color-text-muted)"> Загрузка сообщений… </span>
+          <span class="text-(length:--font-size-sm) text-(--color-text-muted)">Loading messages…</span>
         </div>
       {:else if messagesQuery.isError}
         <div class="flex h-full flex-col items-center justify-center gap-(--space-1) px-(--space-4) text-center">
-          <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Не удалось загрузить сообщения</p>
-          <Button variant="secondary" onclick={() => messagesQuery.refetch()}>Повторить</Button>
+          <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Couldn't load messages.</p>
+          <Button variant="secondary" onclick={() => messagesQuery.refetch()}>Retry</Button>
         </div>
       {:else if messages.length === 0}
         <div class="flex h-full flex-col items-center justify-center gap-(--space-1) px-(--space-4) text-center">
           <MessageCircle class="h-10 w-10 text-(--color-text-subtle)" />
-          <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Сообщений пока нет. Напишите первым!</p>
+          <p class="text-(length:--font-size-sm) text-(--color-text-muted)">No messages yet. Be the first to write!</p>
         </div>
       {:else}
         {#key chatId}
@@ -130,6 +135,7 @@
             onMessageVisible={handleMessageVisible}
             onReachedBottom={handleReachedBottom}
             onLoadOlder={handleLoadOlder}
+            onAuthorClick={handleAuthorClick}
           />
         {/key}
       {/if}
@@ -154,6 +160,6 @@
   </div>
 {:else}
   <div class="flex h-full items-center justify-center">
-    <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Чат не найден</p>
+    <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Chat not found.</p>
   </div>
 {/if}

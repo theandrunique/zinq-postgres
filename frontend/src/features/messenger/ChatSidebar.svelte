@@ -3,13 +3,15 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { Plus, Users } from "@lucide/svelte";
+  import { Plus, Search, Users } from "@lucide/svelte";
   import { Avatar, Button, DropdownMenu, Loader } from "$lib/components/ui";
   import { chatsQueryOptions } from "$lib/queries/messenger/queries.ts";
   import { auth } from "$lib/auth.svelte.ts";
   import { cn } from "$lib/utils";
   import ChatListItem from "./ChatListItem.svelte";
   import { chatCreateModal } from "$services/chatCreateModal.svelte.ts";
+  import { userProfileModal } from "$services/userProfileModal.svelte.ts";
+  import { userSearchModal } from "$services/userSearchModal.svelte.ts";
 
   interface Props {
     class?: string;
@@ -69,48 +71,57 @@
   <header
     class="flex shrink-0 items-center justify-between gap-(--space-1) border-b border-(--color-border-base) px-(--space-2) py-(--space-1)"
   >
-    <h1 class="text-(length:--font-size-lg) font-semibold">Чаты</h1>
+    <h1 class="text-(length:--font-size-lg) font-semibold">Chats</h1>
 
-    {#if profile}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <button
-              {...props}
-              type="button"
-              class="rounded-(--avatar-radius) focus-visible:focus-ring"
-              aria-label="Меню пользователя"
-            >
-              <Avatar src={profile.avatar} alt={profile.display_name} fallback={initials} class="h-8 w-8" />
-            </button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Item onSelect={() => goto(resolve("/profile"))}>Профиль</DropdownMenu.Item>
-            <DropdownMenu.Item onSelect={handleSignout}>Выйти</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-    {/if}
+    <div class="flex items-center gap-(--space-05)">
+      <Button variant="icon" title="Search users" onclick={() => userSearchModal.open()}>
+        <Search class="h-(--button-icon-size) w-(--button-icon-size)" />
+      </Button>
+
+      {#if profile}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                type="button"
+                class="rounded-(--avatar-radius) focus-visible:focus-ring"
+                aria-label="User menu"
+              >
+                <Avatar src={profile.avatar} alt={profile.display_name} fallback={initials} class="h-8 w-8" />
+              </button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Item onSelect={() => userProfileModal.open(currentUserId)}>My profile</DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => goto(resolve("/profile"))}>Account settings</DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={handleSignout}>Sign out</DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      {/if}
+    </div>
   </header>
 
   <div class="min-h-0 flex-1 overflow-y-auto">
     {#if chatsQuery.isPending}
       <div class="flex items-center justify-center gap-(--space-1) py-(--space-4)">
         <Loader size="sm" />
-        <span class="text-(length:--font-size-sm) text-(--color-text-muted)">Загрузка чатов…</span>
+        <span class="text-(length:--font-size-sm) text-(--color-text-muted)">Loading chats…</span>
       </div>
     {:else if chatsQuery.isError}
       <div class="flex flex-col items-center gap-(--space-1) px-(--space-2) py-(--space-4) text-center">
-        <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Не удалось загрузить чаты</p>
-        <Button variant="secondary" onclick={() => chatsQuery.refetch()}>Повторить</Button>
+        <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Couldn't load chats.</p>
+        <Button variant="secondary" onclick={() => chatsQuery.refetch()}>Retry</Button>
       </div>
     {:else if chats.length === 0}
       <div class="flex flex-col items-center gap-(--space-1) px-(--space-2) py-(--space-4) text-center">
         <Users class="h-8 w-8 text-(--color-text-subtle)" />
-        <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Пока нет ни одного чата</p>
-        <p class="text-(length:--font-size-xs) text-(--color-text-subtle)">Создайте групповой чат кнопкой ниже</p>
+        <p class="text-(length:--font-size-sm) text-(--color-text-muted)">No chats yet.</p>
+        <p class="text-(length:--font-size-xs) text-(--color-text-subtle)">
+          Create a group chat with the button below.
+        </p>
       </div>
     {:else}
       {#each chats as chat (chat.id)}

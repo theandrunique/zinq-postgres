@@ -27,9 +27,9 @@
     } catch (cause) {
       if (cause instanceof AuthError && cause.requiresTotp) {
         showTotp = true;
-        error = "Введите код из приложения-аутентификатора";
+        error = "Enter the code from your authenticator app.";
       } else {
-        error = cause instanceof Error && cause.message ? cause.message : "Не удалось войти. Попробуйте ещё раз.";
+        error = cause instanceof Error && cause.message ? cause.message : "Couldn't sign in. Try again.";
       }
     } finally {
       submitting = false;
@@ -46,9 +46,9 @@
     <div
       class="rounded-(--radius-2xl) border-(length:--border-width-default) border-(color:--color-border-base) bg-(--color-background-surface) p-(--space-4) shadow-(--shadow-elevation-3)"
     >
-      <h1 class="text-(length:--font-size-xl) font-semibold tracking-tight text-(--color-text-base)">Вход</h1>
+      <h1 class="text-(length:--font-size-xl) font-semibold tracking-tight text-(--color-text-base)">Sign in</h1>
       <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-        Войдите в аккаунт Zinq, чтобы продолжить
+        Sign in to your Zinq account to continue
       </p>
 
       <form class="mt-(--space-2) flex flex-col gap-(--space-1)" onsubmit={handleSubmit}>
@@ -57,7 +57,7 @@
             for="username"
             class="mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)"
           >
-            Имя пользователя
+            Username
           </label>
           <Input id="username" name="username" type="text" autocomplete="username" required bind:value={username} />
         </div>
@@ -67,7 +67,7 @@
             for="password"
             class="mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)"
           >
-            Пароль
+            Password
           </label>
           <Input
             id="password"
@@ -85,7 +85,7 @@
               for="totp"
               class="mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)"
             >
-              Код подтверждения
+              Verification code
             </label>
             <Input
               id="totp"
@@ -108,17 +108,17 @@
         {/if}
 
         <Button type="submit" disabled={submitting} class="w-full">
-          {submitting ? "Входим…" : "Войти"}
+          {submitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
 
       <p class="mt-(--space-2) text-center text-(length:--font-size-sm) text-(--color-text-muted)">
-        Нет аккаунта?
+        Don't have an account?
         <a
           href={resolve("/register")}
           class="font-medium text-(--color-text-link) transition-colors duration-(--duration-fast) hover:text-(--color-text-link-hover)"
         >
-          Зарегистрироваться
+          Sign up
         </a>
       </p>
     </div>

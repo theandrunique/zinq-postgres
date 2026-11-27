@@ -13,17 +13,17 @@ export function formatTime(iso: string): string {
   startOfWeek.setHours(0, 0, 0, 0);
 
   if (isToday) {
-    return date.toLocaleTimeString("ru-RU", {
+    return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
   }
 
   if (date >= startOfWeek) {
-    return date.toLocaleDateString("ru-RU", { weekday: "short" });
+    return date.toLocaleDateString("en-US", { weekday: "short" });
   }
 
-  return date.toLocaleDateString("ru-RU");
+  return date.toLocaleDateString("en-US");
 }
 
 export function getMessagePreview(chat: Chat, currentUserId: string): string | null {
@@ -41,7 +41,7 @@ export function getMessagePreview(chat: Chat, currentUserId: string): string | n
 
   if (isMetaMessage({ type: lastMessage.message_type.type })) return text;
 
-  if (lastMessage.author_id === currentUserId) return `Вы: ${text}`;
+  if (lastMessage.author_id === currentUserId) return `You: ${text}`;
 
   const authorName = lastMessage.author?.display_name || lastMessage.author?.username;
 

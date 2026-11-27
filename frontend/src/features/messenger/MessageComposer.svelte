@@ -48,14 +48,14 @@
 >
   <Textarea
     bind:value
-    placeholder="Написать сообщение…"
+    placeholder="Write a message…"
     rows={1}
     disabled={disabled || sending}
     class="max-h-40 min-h-10 resize-none py-(--space-05)"
     onkeydown={handleKeydown}
   />
 
-  <Button type="submit" disabled={!canSend} aria-label="Отправить" class="h-10 w-10 shrink-0">
+  <Button type="submit" disabled={!canSend} aria-label="Send" class="h-10 w-10 shrink-0">
     <SendHorizontal class="h-5 w-5" />
   </Button>
 </form>

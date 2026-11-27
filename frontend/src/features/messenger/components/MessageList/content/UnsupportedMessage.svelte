@@ -9,5 +9,5 @@
 </script>
 
 <div class="text-xs italic opacity-50">
-  Неподдерживаемый тип сообщения: {message.type}
+  Unsupported message type: {message.type}
 </div>

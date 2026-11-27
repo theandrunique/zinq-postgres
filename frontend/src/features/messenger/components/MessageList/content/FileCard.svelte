@@ -13,9 +13,9 @@
   let url = $derived(getAttachmentUrl(attachment));
 
   function formatFileSize(size: number): string {
-    if (size < 1024) return `${size} Б`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} КБ`;
-    return `${(size / (1024 * 1024)).toFixed(1)} МБ`;
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   function handleClick() {

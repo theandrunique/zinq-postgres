@@ -12,9 +12,9 @@
   let buttonState = $derived(manager.buttonState);
 
   let label = $derived.by(() => {
-    if (buttonState === "toBottom") return "Вниз";
-    if (buttonState === "toLastRead") return "К непрочитанным";
-    if (buttonState === "goBack") return "Назад";
+    if (buttonState === "toBottom") return "Down";
+    if (buttonState === "toLastRead") return "To unread";
+    if (buttonState === "goBack") return "Back";
     return "";
   });
 </script>

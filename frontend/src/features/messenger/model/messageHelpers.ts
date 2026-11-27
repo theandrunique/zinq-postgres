@@ -69,8 +69,8 @@ function attachmentPreview(message: RenderableMessage & { attachments?: unknown 
     const first = attachments[0] as { filename?: unknown } | undefined;
     const filename = typeof first?.filename === "string" ? first.filename : null;
 
-    if (attachments.length === 1) return filename ?? "Вложение";
-    return `${filename ?? "Вложение"} и ещё ${attachments.length - 1}`;
+    if (attachments.length === 1) return filename ?? "Attachment";
+    return `${filename ?? "Attachment"} and ${attachments.length - 1} more`;
   }
 
   return "";
@@ -89,44 +89,44 @@ export function renderMessageText(message: RenderableMessage & { attachments?: u
     case "DEFAULT":
     case "REPLY":
     case "FORWARD":
-      return content || attachmentPreview(message) || "Вложение";
+      return content || attachmentPreview(message) || "Attachment";
 
     case "MEMBER_ADD": {
       const name = referencedUserName(metadata.user);
-      return name ? `${name} добавлен(а) в чат` : "Участник добавлен в чат";
+      return name ? `${name} added to the chat` : "Member added to the chat";
     }
 
     case "MEMBER_REMOVE": {
       const name = referencedUserName(metadata.user);
-      return name ? `${name} удалён(а) из чата` : "Участник удалён из чата";
+      return name ? `${name} removed from the chat` : "Member removed from the chat";
     }
 
     case "MEMBER_LEAVE": {
       const name = referencedUserName(metadata.user);
-      return name ? `${name} покинул(а) чат` : "Участник покинул чат";
+      return name ? `${name} left the chat` : "Member left the chat";
     }
 
     case "CHAT_NAME_UPDATE": {
       const name = typeof metadata.new_name === "string" ? metadata.new_name : null;
-      return name ? `Название чата изменено на «${name}»` : "Название чата изменено";
+      return name ? `Chat name changed to "${name}"` : "Chat name changed";
     }
 
     case "CHAT_IMAGE_UPDATE":
-      return "Изображение чата обновлено";
+      return "Chat image updated";
 
     case "CHAT_CREATE": {
       const name = typeof metadata.chat_name === "string" ? metadata.chat_name : null;
-      return name ? `Чат «${name}» создан` : "Чат создан";
+      return name ? `Chat "${name}" created` : "Chat created";
     }
 
     case "CHAT_PINNED_MESSAGE":
-      return "Сообщение закреплено";
+      return "Message pinned";
 
     case "CHAT_UNPIN_MESSAGE":
-      return "Сообщение откреплено";
+      return "Message unpinned";
 
     default:
-      return content || attachmentPreview(message) || "Неподдерживаемое сообщение";
+      return content || attachmentPreview(message) || "Unsupported message";
   }
 }
 

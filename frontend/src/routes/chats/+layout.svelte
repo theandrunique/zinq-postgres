@@ -4,7 +4,9 @@
   import { cn } from "$lib/utils";
   import type { LayoutProps } from "./$types";
   import { ChatSidebar } from "$features/messenger";
-  import { ChatCreateDialog } from "$features/chat-create";
+  import { ChatCreateModal } from "$features/chat-create";
+  import { UserProfileDialog } from "$features/user-profile";
+  import { UserSearchDialog } from "$features/user-search";
 
   let { children }: LayoutProps = $props();
 
@@ -24,5 +26,7 @@
     {@render children()}
   </main>
 
-  <ChatCreateDialog />
+  <ChatCreateModal />
+  <UserSearchDialog />
+  <UserProfileDialog />
 </div>

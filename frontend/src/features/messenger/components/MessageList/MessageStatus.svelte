@@ -26,7 +26,7 @@
   )}
 >
   <span class="mr-1">
-    {#if isEdited}изм.{/if}
+    {#if isEdited}ed.{/if}
     {formatMessageTime(message.created_at)}
   </span>
   {#if isOwnMessage}

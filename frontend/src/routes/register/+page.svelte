@@ -27,8 +27,7 @@
         fieldErrors = cause.errors ?? {};
         error = cause.message;
       } else {
-        error =
-          cause instanceof Error && cause.message ? cause.message : "Не удалось создать аккаунт. Попробуйте ещё раз.";
+        error = cause instanceof Error && cause.message ? cause.message : "Couldn't create the account. Try again.";
       }
     } finally {
       submitting = false;
@@ -45,9 +44,9 @@
     <div
       class="rounded-(--radius-2xl) border-(length:--border-width-default) border-(color:--color-border-base) bg-(--color-background-surface) p-(--space-4) shadow-(--shadow-elevation-3)"
     >
-      <h1 class="text-(length:--font-size-xl) font-semibold tracking-tight text-(--color-text-base)">Регистрация</h1>
+      <h1 class="text-(length:--font-size-xl) font-semibold tracking-tight text-(--color-text-base)">Sign up</h1>
       <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-        Создайте аккаунт, чтобы начать работу с Zinq
+        Create an account to start using Zinq
       </p>
 
       <form class="mt-(--space-2) flex flex-col gap-(--space-1)" onsubmit={handleSubmit}>
@@ -56,7 +55,7 @@
             for="username"
             class="mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)"
           >
-            Имя пользователя
+            Username
           </label>
           <Input
             id="username"
@@ -79,7 +78,7 @@
             for="display_name"
             class="mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)"
           >
-            Отображаемое имя
+            Display name
           </label>
           <Input
             id="display_name"
@@ -123,7 +122,7 @@
             for="password"
             class="mb-(--space-05) block text-(length:--font-size-sm) font-medium text-(--color-text-base)"
           >
-            Пароль
+            Password
           </label>
           <Input
             id="password"
@@ -151,17 +150,17 @@
         {/if}
 
         <Button type="submit" disabled={submitting} class="w-full">
-          {submitting ? "Создаём аккаунт…" : "Создать аккаунт"}
+          {submitting ? "Creating account…" : "Create account"}
         </Button>
       </form>
 
       <p class="mt-(--space-2) text-center text-(length:--font-size-sm) text-(--color-text-muted)">
-        Уже есть аккаунт?
+        Already have an account?
         <a
           href={resolve("/login")}
           class="font-medium text-(--color-text-link) transition-colors duration-(--duration-fast) hover:text-(--color-text-link-hover)"
         >
-          Войти
+          Sign in
         </a>
       </p>
     </div>

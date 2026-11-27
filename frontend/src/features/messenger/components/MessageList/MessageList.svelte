@@ -16,6 +16,7 @@
     onReachedBottom?: (newestMessageId: string) => void;
     onLoadAroundMessage?: (targetId: string) => Promise<void>;
     onLoadOlder?: () => void;
+    onAuthorClick?: (userId: string) => void;
   }
 
   let {
@@ -27,6 +28,7 @@
     onReachedBottom,
     onLoadAroundMessage,
     onLoadOlder,
+    onAuthorClick,
   }: Props = $props();
 
   let dateGroups = $derived(groupMessagesByDate(messages));
@@ -190,6 +192,7 @@
               {maxReadMessageId}
               messageAction={manager.messageAction}
               onNavigateToMessage={handleNavigateToMessage}
+              {onAuthorClick}
             />
           {/each}
         </div>

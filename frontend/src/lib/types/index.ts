@@ -11,6 +11,15 @@ export interface ChatMember extends MessageAuthor {
   permissions: string | null;
 }
 
+export interface PublicUser {
+  id: string;
+  username: string;
+  display_name: string;
+  bio: string | null;
+  avatar: string | null;
+  created_at: string;
+}
+
 /**
  * The backend serializes message types as `{ type, payload }` both for messages
  * and for the last message of a chat.

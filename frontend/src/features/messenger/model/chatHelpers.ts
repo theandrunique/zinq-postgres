@@ -12,10 +12,10 @@ export function isSavedMessages(chat: Chat, currentUserId: string): boolean {
 
 export function getChatDisplayName(chat: Chat, currentUserId: string): string {
   if (chat.type === "DM") {
-    if (isSavedMessages(chat, currentUserId)) return "Избранное";
+    if (isSavedMessages(chat, currentUserId)) return "Saved messages";
 
     const other = getOtherMember(chat, currentUserId);
-    return other?.display_name || other?.username || "Личный чат";
+    return other?.display_name || other?.username || "Direct chat";
   }
 
   if (chat.name) return chat.name;
@@ -24,11 +24,10 @@ export function getChatDisplayName(chat: Chat, currentUserId: string): string {
     .filter((member) => member.user_id !== currentUserId)
     .map((member) => member.display_name || member.username);
 
-  return names.length > 0 ? names.join(", ") : "Групповой чат";
+  return names.length > 0 ? names.join(", ") : "Group chat";
 }
 
 export function getChatAvatar(chat: Chat, currentUserId: string): string | null {
-  if (isSavedMessages(chat, currentUserId)) return "/bookmark.png";
   if (chat.image) return chat.image;
 
   if (chat.type === "DM") {

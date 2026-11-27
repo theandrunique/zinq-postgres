@@ -12,6 +12,7 @@
     maxReadMessageId?: string;
     messageAction: (node: HTMLElement, id: string) => { destroy: () => void };
     onNavigateToMessage?: (fromId: string, toId: string) => void;
+    onAuthorClick?: (userId: string) => void;
   }
 
   let {
@@ -22,6 +23,7 @@
     maxReadMessageId = "",
     messageAction,
     onNavigateToMessage,
+    onAuthorClick,
   }: Props = $props();
 
   let borderRadius = $derived.by(() => {
@@ -45,7 +47,7 @@
 
   let isReply = $derived(message.type === "REPLY");
   let referencedMessage = $derived(message.referenced_message);
-  let authorName = $derived(message.author?.display_name || message.author?.username || "Пользователь");
+  let authorName = $derived(message.author?.display_name || message.author?.username || "User");
 </script>
 
 <div
@@ -56,9 +58,16 @@
 >
   <div class="relative max-w-[min(90%,28rem)] py-1.5 pr-3 pl-2.5 text-sm {bubbleText} {borderRadius} {bubbleBg}">
     {#if !isOwnMessage && isFirstInGroup}
-      <div class="mb-1 leading-none font-semibold">
+      <button
+        type="button"
+        class="mb-1 block max-w-full truncate leading-none font-semibold underline-offset-2 hover:underline focus-visible:focus-ring"
+        onclick={(event) => {
+          event.stopPropagation();
+          onAuthorClick?.(message.author_id);
+        }}
+      >
         {authorName}
-      </div>
+      </button>
     {/if}
 
     {#if isReply && referencedMessage}
@@ -77,7 +86,7 @@
           : 'border-(--color-purple-8) bg-(--color-purple-8)/30'}"
       >
         <div class="font-medium">
-          {referencedMessage.author?.display_name ?? referencedMessage.author?.username ?? "Пользователь"}
+          {referencedMessage.author?.display_name ?? referencedMessage.author?.username ?? "User"}
         </div>
         <div class="truncate text-sm">
           {#if referencedMessage.attachments.length > 0}

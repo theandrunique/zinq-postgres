@@ -32,10 +32,10 @@
   ];
 
   const roles = [
-    { value: "developer", label: "Разработчик" },
-    { value: "designer", label: "Дизайнер" },
-    { value: "manager", label: "Менеджер" },
-    { value: "unavailable", label: "Недоступно", disabled: true },
+    { value: "developer", label: "Developer" },
+    { value: "designer", label: "Designer" },
+    { value: "manager", label: "Manager" },
+    { value: "unavailable", label: "Unavailable", disabled: true },
   ];
 
   const demoAvatar =
@@ -150,7 +150,7 @@
   }
 
   let inputValue = $state("zinq");
-  let textareaValue = $state("Привет, Zinq!");
+  let textareaValue = $state("Hello, Zinq!");
 
   let selectEmpty = $state<string | undefined>(undefined);
   let selectValue = $state("designer");
@@ -189,7 +189,7 @@
       <div>
         <h1 class="text-(length:--font-size-xl) font-semibold tracking-tight">UI Kit</h1>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Витрина компонентов, токенов и состояний
+          Showcase of components, tokens, and states
         </p>
       </div>
 
@@ -198,7 +198,7 @@
           href={resolve("/")}
           class="rounded-(--button-radius) px-(--button-padding-x) py-(--button-padding-y) text-(length:--font-size-sm) font-medium text-(--color-text-link) hover:text-(--color-text-link-hover)"
         >
-          Назад
+          Back
         </a>
       </div>
     </div>
@@ -206,7 +206,7 @@
 
   <div class="mx-auto grid max-w-6xl gap-(--space-3) px-(--space-3) py-(--space-3) lg:grid-cols-[220px_1fr]">
     <aside class="lg:sticky lg:top-(--space-2) lg:self-start">
-      <nav aria-label="Разделы" class="flex flex-wrap gap-(--space-05) lg:flex-col">
+      <nav aria-label="Sections" class="flex flex-wrap gap-(--space-05) lg:flex-col">
         {#each sections as section (section.id)}
           <a
             href={`#${section.id}`}
@@ -222,7 +222,7 @@
       <section id="foundations" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Foundations</h2>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Семантические токены и шкалы. Значения обновляются при смене темы.
+          Semantic tokens and scales. Values update when the theme changes.
         </p>
 
         <div class="mt-(--space-2) flex flex-col gap-(--space-2)">
@@ -362,7 +362,7 @@
       <section id="button" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Button</h2>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Варианты, иконки и disabled-состояния.
+          Variants, icons, and disabled states.
         </p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2 lg:grid-cols-3">
@@ -376,7 +376,7 @@
           </div>
           <div class={demoCardClass}>
             <p class={demoLabelClass}>variant="icon"</p>
-            <Button variant="icon" aria-label="Настройки">
+            <Button variant="icon" aria-label="Settings">
               <Settings class="h-(--button-icon-size) w-(--button-icon-size)" />
             </Button>
           </div>
@@ -384,14 +384,14 @@
             <p class={demoLabelClass}>variant="destructive"</p>
             <Button variant="destructive">
               <Trash2 class="h-(--button-icon-size) w-(--button-icon-size)" />
-              Удалить
+              Delete
             </Button>
           </div>
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>с иконкой</p>
+            <p class={demoLabelClass}>with icon</p>
             <Button>
               <Plus class="h-(--button-icon-size) w-(--button-icon-size)" />
-              Создать
+              Create
             </Button>
           </div>
           <div class={demoCardClass}>
@@ -406,15 +406,15 @@
 
       <section id="input" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Input</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Поля ввода и состояния.</p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Input fields and states.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
             <p class={demoLabelClass}>default / hover / focus</p>
-            <Input placeholder="Введите имя" />
+            <Input placeholder="Enter a name" />
           </div>
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>со значением</p>
+            <p class={demoLabelClass}>with value</p>
             <Input bind:value={inputValue} />
           </div>
           <div class={demoCardClass}>
@@ -425,22 +425,22 @@
             <p class={demoLabelClass}>invalid</p>
             <label for="demo-invalid" class={fieldLabelClass}>Email</label>
             <Input id="demo-invalid" placeholder="name@example.com" aria-invalid="true" />
-            <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-error)">Некорректный email</p>
+            <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-error)">Invalid email</p>
           </div>
         </div>
       </section>
 
       <section id="textarea" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Textarea</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Многострочное поле ввода.</p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Multiline input field.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
             <p class={demoLabelClass}>default / hover / focus</p>
-            <Textarea placeholder="Расскажите о себе" />
+            <Textarea placeholder="Tell us about yourself" />
           </div>
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>со значением</p>
+            <p class={demoLabelClass}>with value</p>
             <Textarea bind:value={textareaValue} />
           </div>
           <div class={demoCardClass}>
@@ -449,8 +449,8 @@
           </div>
           <div class={demoCardClass}>
             <p class={demoLabelClass}>invalid</p>
-            <Textarea placeholder="Ошибка" aria-invalid="true" />
-            <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-error)">Заполните поле</p>
+            <Textarea placeholder="Error" aria-invalid="true" />
+            <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-error)">Fill in the field</p>
           </div>
         </div>
       </section>
@@ -458,16 +458,16 @@
       <section id="select" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Select</h2>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Выпадающий список с disabled-пунктом.
+          Dropdown with a disabled item.
         </p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
             <p class={demoLabelClass}>placeholder</p>
-            <Select items={roles} placeholder="Выберите роль" bind:value={selectEmpty} />
+            <Select items={roles} placeholder="Select a role" bind:value={selectEmpty} />
           </div>
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>со значением</p>
+            <p class={demoLabelClass}>with value</p>
             <Select items={roles} bind:value={selectValue} />
           </div>
           <div class={demoCardClass}>
@@ -475,10 +475,10 @@
             <Select items={roles} placeholder="Disabled" disabled />
           </div>
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>disabled-пункт</p>
+            <p class={demoLabelClass}>disabled item</p>
             <Select items={roles} bind:value={selectValue} />
             <p class="mt-(--space-05) text-(length:--font-size-xs) text-(--color-text-subtle)">
-              В списке есть недоступный пункт.
+              The list contains an unavailable item.
             </p>
           </div>
         </div>
@@ -486,7 +486,7 @@
 
       <section id="switch" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Switch</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Переключатели и состояния.</p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Toggles and states.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
@@ -494,7 +494,7 @@
             <div class="flex items-center gap-(--space-1)">
               <Switch bind:checked={switchBasic} />
               <span class="text-(length:--font-size-sm) text-(--color-text-muted)">
-                {switchBasic ? "Включено" : "Выключено"}
+                {switchBasic ? "On" : "Off"}
               </span>
             </div>
           </div>
@@ -503,7 +503,7 @@
             <div class="flex items-center gap-(--space-1)">
               <Switch bind:checked={switchChecked} />
               <span class="text-(length:--font-size-sm) text-(--color-text-muted)">
-                {switchChecked ? "Включено" : "Выключено"}
+                {switchChecked ? "On" : "Off"}
               </span>
             </div>
           </div>
@@ -519,30 +519,28 @@
 
       <section id="slider" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Slider</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Ползунки и кастомные диапазоны.
-        </p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Sliders and custom ranges.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
             <p class={demoLabelClass}>default</p>
             <Slider bind:value={sliderBasic} />
             <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-              Значение: {sliderBasic}
+              Value: {sliderBasic}
             </p>
           </div>
           <div class={demoCardClass}>
             <p class={demoLabelClass}>min=0 max=10 step=1</p>
             <Slider bind:value={sliderCustom} min={0} max={10} step={1} />
             <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-              Значение: {sliderCustom}
+              Value: {sliderCustom}
             </p>
           </div>
           <div class={demoCardClass}>
             <p class={demoLabelClass}>disabled</p>
             <Slider bind:value={sliderDisabled} disabled />
             <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-              Значение: {sliderDisabled}
+              Value: {sliderDisabled}
             </p>
           </div>
         </div>
@@ -550,34 +548,27 @@
 
       <section id="avatar" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Avatar</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Изображение, fallback и размер.
-        </p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Image, fallback, and size.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-3">
           <div class={demoCardClass}>
             <p class={demoLabelClass}>image</p>
-            <Avatar src={demoAvatar} alt="Демо-аватар" fallback="ZQ" />
+            <Avatar src={demoAvatar} alt="Demo avatar" fallback="ZQ" />
           </div>
           <div class={demoCardClass}>
             <p class={demoLabelClass}>fallback</p>
-            <Avatar src={null} alt="Без изображения" fallback="ZN" />
+            <Avatar src={null} alt="No image" fallback="ZN" />
           </div>
           <div class={demoCardClass}>
             <p class={demoLabelClass}>size override</p>
-            <Avatar
-              src={null}
-              alt="Большой аватар"
-              fallback="UI"
-              style="height: var(--space-7); width: var(--space-7)"
-            />
+            <Avatar src={null} alt="Large avatar" fallback="UI" style="height: var(--space-7); width: var(--space-7)" />
           </div>
         </div>
       </section>
 
       <section id="loader" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Loader</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Индикаторы загрузки.</p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Loading indicators.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-3">
           <div class={demoCardClass}>
@@ -598,25 +589,25 @@
       <section id="tooltip" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Tooltip</h2>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Стороны и контентные подсказки.
+          Sides and content tooltips.
         </p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2 lg:grid-cols-3">
           {#snippet sideTrigger()}
-            <Button variant="secondary">Наведи</Button>
+            <Button variant="secondary">Hover me</Button>
           {/snippet}
 
           {#snippet topContent()}
-            <span>Сверху</span>
+            <span>Top</span>
           {/snippet}
           {#snippet rightContent()}
-            <span>Справа</span>
+            <span>Right</span>
           {/snippet}
           {#snippet bottomContent()}
-            <span>Снизу</span>
+            <span>Bottom</span>
           {/snippet}
           {#snippet leftContent()}
-            <span>Слева</span>
+            <span>Left</span>
           {/snippet}
 
           <div class={demoCardClass}>
@@ -637,17 +628,17 @@
           </div>
 
           {#snippet longTrigger()}
-            <Button variant="secondary">Длинный текст</Button>
+            <Button variant="secondary">Long text</Button>
           {/snippet}
           {#snippet longContent()}
             <span>
-              Это длинная подсказка с несколькими строками текста. Она ограничена по ширине и переносится, чтобы
-              оставаться читаемой даже при большом объёме контента.
+              This is a long tooltip with several lines of text. It is width-constrained and wraps to stay readable even
+              with a lot of content.
             </span>
           {/snippet}
 
           <div class={demoCardClass}>
-            <p class={demoLabelClass}>длинный текст</p>
+            <p class={demoLabelClass}>long text</p>
             <Tooltip trigger={longTrigger} content={longContent} />
           </div>
         </div>
@@ -655,9 +646,7 @@
 
       <section id="dialog" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Dialog</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Обычный и вложенный диалог.
-        </p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Regular and nested dialog.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
@@ -665,15 +654,16 @@
             <Dialog.Root>
               <Dialog.Trigger>
                 {#snippet child({ props })}
-                  <Button {...props}>Открыть диалог</Button>
+                  <Button {...props}>Open dialog</Button>
                 {/snippet}
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay />
                 <Dialog.Content>
-                  <Dialog.Title>Заголовок диалога</Dialog.Title>
+                  <Dialog.Title>Dialog title</Dialog.Title>
                   <p class="text-(length:--font-size-sm) text-(--color-text-muted)">
-                    Это пример диалога. Закройте его клавишей Esc, кликом по фону или кнопкой справа сверху.
+                    This is a dialog example. Close it with Esc, by clicking the backdrop, or with the button in the
+                    top-right corner.
                   </p>
                   <Dialog.Close />
                 </Dialog.Content>
@@ -686,27 +676,29 @@
             <Dialog.Root>
               <Dialog.Trigger>
                 {#snippet child({ props })}
-                  <Button {...props} variant="secondary">Открыть внешний</Button>
+                  <Button {...props} variant="secondary">Open outer</Button>
                 {/snippet}
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay />
                 <Dialog.Content>
-                  <Dialog.Title>Внешний диалог</Dialog.Title>
-                  <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Из него можно открыть вложенный.</p>
+                  <Dialog.Title>Outer dialog</Dialog.Title>
+                  <p class="text-(length:--font-size-sm) text-(--color-text-muted)">
+                    You can open a nested dialog from it.
+                  </p>
                   <div class="mt-(--space-2)">
                     <Dialog.Root>
                       <Dialog.Trigger>
                         {#snippet child({ props })}
-                          <Button {...props} variant="secondary">Открыть вложенный</Button>
+                          <Button {...props} variant="secondary">Open nested</Button>
                         {/snippet}
                       </Dialog.Trigger>
                       <Dialog.Portal>
                         <Dialog.Overlay />
                         <Dialog.Content>
-                          <Dialog.Title>Вложенный диалог</Dialog.Title>
+                          <Dialog.Title>Nested dialog</Dialog.Title>
                           <p class="text-(length:--font-size-sm) text-(--color-text-muted)">
-                            Вложенный диалог смещён и уменьшен через --bits-dialog-nested-count.
+                            The nested dialog is offset and scaled via --bits-dialog-nested-count.
                           </p>
                           <Dialog.Close />
                         </Dialog.Content>
@@ -723,7 +715,7 @@
 
       <section id="dropdown-menu" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">DropdownMenu</h2>
-        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Меню с disabled-пунктом.</p>
+        <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">Menu with a disabled item.</p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) sm:grid-cols-2">
           <div class={demoCardClass}>
@@ -731,14 +723,14 @@
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
-                  <Button {...props} variant="secondary">Открыть меню</Button>
+                  <Button {...props} variant="secondary">Open menu</Button>
                 {/snippet}
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.Content>
-                  <DropdownMenu.Item>Профиль</DropdownMenu.Item>
-                  <DropdownMenu.Item>Настройки</DropdownMenu.Item>
-                  <DropdownMenu.Item disabled>Недоступно</DropdownMenu.Item>
+                  <DropdownMenu.Item>Profile</DropdownMenu.Item>
+                  <DropdownMenu.Item>Settings</DropdownMenu.Item>
+                  <DropdownMenu.Item disabled>Unavailable</DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
@@ -749,7 +741,7 @@
       <section id="playground" class="scroll-mt-(--space-3)">
         <h2 class="text-(length:--font-size-lg) font-semibold">Playground</h2>
         <p class="mt-(--space-05) text-(length:--font-size-sm) text-(--color-text-muted)">
-          Интерактивная форма и live-состояние.
+          Interactive form and live state.
         </p>
 
         <div class="mt-(--space-2) grid gap-(--space-2) lg:grid-cols-2">
@@ -758,36 +750,36 @@
             onsubmit={(event) => event.preventDefault()}
           >
             <div>
-              <label for="pg-name" class={fieldLabelClass}>Имя</label>
-              <Input id="pg-name" bind:value={name} placeholder="Как вас зовут?" />
+              <label for="pg-name" class={fieldLabelClass}>Name</label>
+              <Input id="pg-name" bind:value={name} placeholder="What's your name?" />
             </div>
 
             <div>
-              <label for="pg-bio" class={fieldLabelClass}>О себе</label>
-              <Textarea id="pg-bio" bind:value={bio} placeholder="Пара слов о себе" />
+              <label for="pg-bio" class={fieldLabelClass}>About</label>
+              <Textarea id="pg-bio" bind:value={bio} placeholder="A few words about yourself" />
             </div>
 
             <div>
-              <span class={fieldLabelClass}>Роль</span>
+              <span class={fieldLabelClass}>Role</span>
               <Select items={roles} bind:value={role} />
             </div>
 
             <div class="flex items-center justify-between gap-(--space-2)">
-              <span class="text-(length:--font-size-sm) text-(--color-text-base)">Уведомления</span>
+              <span class="text-(length:--font-size-sm) text-(--color-text-base)">Notifications</span>
               <Switch bind:checked={notifications} />
             </div>
 
             <div>
               <div class="flex items-center justify-between">
-                <span class="text-(length:--font-size-sm) text-(--color-text-base)">Громкость</span>
+                <span class="text-(length:--font-size-sm) text-(--color-text-base)">Volume</span>
                 <span class="text-(length:--font-size-sm) text-(--color-text-muted)">{volume}</span>
               </div>
               <Slider bind:value={volume} />
             </div>
 
             <div class="flex flex-wrap gap-(--space-1)">
-              <Button type="submit">Сохранить</Button>
-              <Button type="button" variant="secondary" onclick={resetPlayground}>Сбросить</Button>
+              <Button type="submit">Save</Button>
+              <Button type="button" variant="secondary" onclick={resetPlayground}>Reset</Button>
             </div>
           </form>
 
