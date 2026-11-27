@@ -17,6 +17,8 @@ pub trait UserRepository: Send + Sync {
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, anyhow::Error>;
     async fn get_by_username(&self, username: &str) -> Result<Option<User>, anyhow::Error>;
     async fn get_by_ids(&self, user_ids: &[i64]) -> Result<Vec<User>, anyhow::Error>;
+    async fn search_by_username(&self, query: &str, limit: i32)
+    -> Result<Vec<User>, anyhow::Error>;
 
     async fn exists_by_email(&self, email: &str) -> Result<bool, anyhow::Error>;
     async fn exists_by_username(&self, username: &str) -> Result<bool, anyhow::Error>;

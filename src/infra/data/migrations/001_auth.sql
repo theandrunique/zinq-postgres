@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
@@ -17,6 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_updated_at TIMESTAMPTZ NOT NULL,
     sessions_ttl SMALLINT NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_username_trgm ON users USING GIN (username gin_trgm_ops);
 
 CREATE TABLE IF NOT EXISTS user_sessions (
     id BIGINT PRIMARY KEY,
