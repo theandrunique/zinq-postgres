@@ -35,5 +35,9 @@ pub async fn get_chat(
 
     let result = handler.handle(command).await?;
 
-    Ok(Json(ChatSchema::from_chat_for_user(result, claims.sub)))
+    Ok(Json(ChatSchema::from_chat_for_user(
+        result.chat,
+        claims.sub,
+        &result.referenced_members,
+    )?))
 }

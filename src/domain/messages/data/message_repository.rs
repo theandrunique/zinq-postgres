@@ -31,5 +31,6 @@ pub trait MessageRepository: Send + Sync {
         chat_id: i64,
         from_message_id: i64,
         to_message_id: i64,
+        limit: i32,
     ) -> Result<Vec<i64>, anyhow::Error>;
 }

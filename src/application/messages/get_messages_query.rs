@@ -1,11 +1,14 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::{
     application::RequestHandler,
     domain::{
         attachments::{Attachment, data::AttachmentRepository},
-        chats::data::{ChatLoadOptions, ChatLoader},
+        chats::{
+            ChatMember,
+            data::{ChatLoadOptions, ChatLoader, ChatMemberRepository},
+        },
         messages::{Message, data::MessageRepository},
     },
     error::Error,
@@ -24,10 +27,12 @@ pub struct GetMessagesQuery {
 pub struct GetMessagesQueryResult {
     pub messages: Vec<Message>,
     pub attachments: HashMap<i64, Vec<Attachment>>,
+    pub members: HashMap<i64, ChatMember>,
 }
 
 pub struct GetMessagesQueryHandler {
     chat_loader: Arc<dyn ChatLoader>,
+    chat_member_repository: Arc<dyn ChatMemberRepository>,
     message_repository: Arc<dyn MessageRepository>,
     attachment_repository: Arc<dyn AttachmentRepository>,
 }
@@ -36,6 +41,7 @@ impl GetMessagesQueryHandler {
     pub fn new(state: &AppState) -> Self {
         Self {
             chat_loader: Arc::clone(&state.chat_loader),
+            chat_member_repository: Arc::clone(&state.chat_member_repository),
             message_repository: Arc::clone(&state.message_repository),
             attachment_repository: Arc::clone(&state.attachment_repository),
         }
@@ -78,15 +84,38 @@ impl RequestHandler for GetMessagesQueryHandler {
             return Ok(GetMessagesQueryResult {
                 messages,
                 attachments: HashMap::new(),
+                members: HashMap::new(),
             });
         }
 
         let message_ids: Vec<i64> = messages.iter().map(|m| m.id).collect();
-        let attachments = self
-            .attachment_repository
-            .get_by_message_ids(request.chat_id, &message_ids)
-            .await
-            .map_err(Error::InternalServerError)?;
+        let member_ids: Vec<i64> = messages
+            .iter()
+            .flat_map(|message| {
+                [
+                    Some(message.author_id),
+                    message.message_type.subject_user_id(),
+                ]
+                .into_iter()
+                .flatten()
+            })
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        let (attachments, members) = tokio::try_join!(
+            async {
+                self.attachment_repository
+                    .get_by_message_ids(request.chat_id, &message_ids)
+                    .await
+            },
+            async {
+                self.chat_member_repository
+                    .get_members_by_ids(request.chat_id, &member_ids)
+                    .await
+            },
+        )
+        .map_err(Error::InternalServerError)?;
 
         let mut attachments_by_message: HashMap<i64, Vec<Attachment>> = HashMap::new();
         for attachment in attachments {
@@ -99,6 +128,7 @@ impl RequestHandler for GetMessagesQueryHandler {
         Ok(GetMessagesQueryResult {
             messages,
             attachments: attachments_by_message,
+            members,
         })
     }
 }

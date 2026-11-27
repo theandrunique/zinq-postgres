@@ -86,6 +86,24 @@ impl Chat {
             .cloned()
     }
 
+    pub fn member_ids_for_last_message(&self) -> Vec<i64> {
+        let Some(last_message) = self.last_message.as_ref() else {
+            return Vec::new();
+        };
+
+        let mut user_ids = vec![last_message.author_id];
+        if let Some(user_id) = last_message.message_type.subject_user_id() {
+            user_ids.push(user_id);
+        }
+
+        let mut seen = std::collections::HashSet::new();
+        user_ids.retain(|user_id| {
+            seen.insert(*user_id) && !self.members.iter().any(|m| m.user_id == *user_id)
+        });
+
+        user_ids
+    }
+
     pub fn has_member(&self, user_id: i64) -> bool {
         self.get_member(user_id).is_some()
     }

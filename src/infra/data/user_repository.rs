@@ -90,6 +90,13 @@ impl PostgresUserRepository {
         Self { pool: pool.clone() }
     }
 
+    fn escape_like_pattern(value: &str) -> String {
+        value
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_")
+    }
+
     fn map_insert_error(err: sqlx::Error) -> AddUserError {
         if let sqlx::Error::Database(ref db_err) = err {
             if db_err.code().as_deref() == Some("23505") {
@@ -197,6 +204,33 @@ impl UserRepository for PostgresUserRepository {
             .into_iter()
             .map(User::try_from)
             .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(users)
+    }
+
+    async fn search_by_username(
+        &self,
+        query: &str,
+        limit: i32,
+    ) -> Result<Vec<User>, anyhow::Error> {
+        let prefix_pattern = format!("{}%", Self::escape_like_pattern(query));
+
+        let users = sqlx::query_as::<_, UserDb>(
+            "SELECT * FROM users
+             WHERE is_active
+               AND (username % $1 OR username ILIKE $2)
+             ORDER BY username <-> $1, username ASC
+             LIMIT $3",
+        )
+        .bind(query)
+        .bind(prefix_pattern)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to search users by username")?
+        .into_iter()
+        .map(User::try_from)
+        .collect::<Result<Vec<_>, _>>()?;
 
         Ok(users)
     }

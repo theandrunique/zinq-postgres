@@ -2,6 +2,7 @@ use crate::{
     application::{
         RequestHandler,
         chats::{CreateChatCommand, CreateChatCommandHandler},
+        chats::{DeleteChatMemberCommand, DeleteChatMemberCommandHandler},
         messages::{AddOrEditMessageCommand, AddOrEditMessageCommandHandler},
         messages::{GetMessagesQuery, GetMessagesQueryHandler},
     },
@@ -10,6 +11,46 @@ use crate::{
     error::Error,
     tests::common::TestContext,
 };
+
+#[tokio::test]
+async fn test_get_messages_resolves_left_members() {
+    let ctx = TestContext::new("test_get_messages_resolves_left_members").await;
+
+    let owner = ctx.create_test_user("owner", "owner@test.com").await;
+    let member = ctx.create_test_user("member", "member@test.com").await;
+    let chat = ctx
+        .create_group_chat(owner.id, "Test Group", vec![member.id], None)
+        .await;
+
+    ctx.create_message(chat.id, member.id, "Message from a leaving member")
+        .await;
+
+    let delete_handler = DeleteChatMemberCommandHandler::new(&ctx.app_state);
+    delete_handler
+        .handle(DeleteChatMemberCommand {
+            current_user_id: owner.id,
+            chat_id: chat.id,
+            user_id: member.id,
+        })
+        .await
+        .expect("Should remove member");
+
+    let query_handler = GetMessagesQueryHandler::new(&ctx.app_state);
+    let result = query_handler
+        .handle(GetMessagesQuery {
+            current_user_id: owner.id,
+            chat_id: chat.id,
+            before: None,
+            limit: 50,
+        })
+        .await
+        .expect("Should succeed");
+
+    assert!(
+        result.members.contains_key(&member.id),
+        "Left members must still be resolvable as message authors and subjects"
+    );
+}
 
 #[tokio::test]
 async fn test_get_messages_success() {

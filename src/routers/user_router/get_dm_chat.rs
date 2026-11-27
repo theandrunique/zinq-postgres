@@ -35,5 +35,8 @@ pub async fn get_dm_chat(
 
     let result = handler.handle(command).await?;
 
-    Ok(Json(result.into()))
+    Ok(Json(ChatSchema::from_chat(
+        result.chat,
+        &result.referenced_members,
+    )?))
 }

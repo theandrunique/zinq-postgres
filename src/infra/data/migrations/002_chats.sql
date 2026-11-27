@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS chats (
     created_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_chats_last_message ON chats(last_message_created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chats_last_message
+    ON chats (last_message_created_at DESC NULLS LAST, id DESC);
 
 CREATE TABLE IF NOT EXISTS private_chats (
     user_id1 BIGINT,
@@ -40,7 +41,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_members_user_id_chat_id ON chat_members(user
 CREATE TABLE IF NOT EXISTS messages (
     id BIGINT PRIMARY KEY,
     chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-    author_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    -- Users are never deleted, so every message always has an author.
+    author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     content TEXT,
     message_type JSONB NOT NULL,
     edited_at TIMESTAMPTZ,
@@ -68,9 +70,9 @@ CREATE INDEX IF NOT EXISTS idx_attachments_chat_id_message_id ON attachments(cha
 CREATE INDEX IF NOT EXISTS idx_attachments_chat_id ON attachments(chat_id, id DESC);
 
 CREATE TABLE IF NOT EXISTS message_acks (
-    chat_id BIGINT NOT NULL,
-    message_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
+    chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL,
 
     PRIMARY KEY (chat_id, message_id, user_id)

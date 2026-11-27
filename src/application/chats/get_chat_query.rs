@@ -1,8 +1,12 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::{
     application::RequestHandler,
-    domain::chats::{Chat, data::ChatRepository},
+    domain::chats::{
+        Chat, ChatMember,
+        data::{ChatMemberRepository, ChatRepository},
+    },
     error::Error,
     state::AppState,
 };
@@ -13,21 +17,29 @@ pub struct GetChatQuery {
     pub chat_id: i64,
 }
 
+#[derive(Debug, Clone)]
+pub struct ChatWithReferences {
+    pub chat: Chat,
+    pub referenced_members: HashMap<i64, ChatMember>,
+}
+
 pub struct GetChatQueryHandler {
     chat_repository: Arc<dyn ChatRepository>,
+    chat_member_repository: Arc<dyn ChatMemberRepository>,
 }
 
 impl GetChatQueryHandler {
     pub fn new(state: &AppState) -> Self {
         Self {
             chat_repository: Arc::clone(&state.chat_repository),
+            chat_member_repository: Arc::clone(&state.chat_member_repository),
         }
     }
 }
 
 impl RequestHandler for GetChatQueryHandler {
     type Request = GetChatQuery;
-    type Output = Chat;
+    type Output = ChatWithReferences;
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
@@ -45,6 +57,15 @@ impl RequestHandler for GetChatQueryHandler {
             });
         }
 
-        Ok(chat)
+        let referenced_members = self
+            .chat_member_repository
+            .get_members_by_ids(chat.id, &chat.member_ids_for_last_message())
+            .await
+            .map_err(Error::InternalServerError)?;
+
+        Ok(ChatWithReferences {
+            chat,
+            referenced_members,
+        })
     }
 }

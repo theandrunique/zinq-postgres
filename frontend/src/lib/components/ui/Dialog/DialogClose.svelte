@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Dialog } from "bits-ui";
-  import { cn } from "#lib/utils";
+  import { cn } from "$lib/utils";
   import { X } from "@lucide/svelte";
 
   let { class: className, ...rest }: Dialog.CloseProps = $props();

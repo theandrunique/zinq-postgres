@@ -57,12 +57,12 @@ impl RequestHandler for DeleteChatMemberCommandHandler {
             .map_err(Error::InternalServerError)?
             .ok_or_else(|| Error::ChatNotFound(request.chat_id))?;
 
-        if !chat.has_member(request.current_user_id) {
-            return Err(Error::UserNotMember {
+        let initiator = chat
+            .get_member(request.current_user_id)
+            .ok_or(Error::UserNotMember {
                 user_id: request.current_user_id,
                 chat_id: request.chat_id,
-            });
-        }
+            })?;
 
         if chat.chat_type != ChatType::GroupDm {
             return Err(Error::ChatTypeNotSupported {
@@ -96,7 +96,7 @@ impl RequestHandler for DeleteChatMemberCommandHandler {
                 .publish(&DomainEvent::ChatMemberRemove {
                     member,
                     chat_id: chat.id,
-                    initiator_id: request.current_user_id,
+                    initiator,
                 })
                 .await?;
         } else {

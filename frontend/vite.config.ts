@@ -39,6 +39,11 @@ export default defineConfig(({ command }) => {
           runes: ({ filename }) => (filename.split(/[/\\]/).includes("node_modules") ? undefined : true),
         },
         adapter: adapter({ fallback: "index.html" }),
+        alias: {
+          $lib: "./src/lib",
+          $features: "./src/features",
+          $services: "./src/services",
+        },
         version: {
           name: version,
           pollInterval: 60_000,
@@ -48,6 +53,10 @@ export default defineConfig(({ command }) => {
     server: {
       proxy: {
         "/api": "http://localhost:8000",
+        "/socket.io": {
+          target: "http://localhost:8000",
+          ws: true,
+        },
       },
     },
   };

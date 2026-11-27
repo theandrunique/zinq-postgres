@@ -22,4 +22,6 @@ pub use delete_cloud_attachment_command::{
 };
 pub use get_message_acks_query::{GetMessageAcksQuery, GetMessageAcksQueryHandler};
 pub use get_messages_query::{GetMessagesQuery, GetMessagesQueryHandler, GetMessagesQueryResult};
-pub use message_ack_command::{MessageAckCommand, MessageAckCommandHandler, MessageAckInput};
+pub use message_ack_command::{
+    MAX_ACKS_PER_REQUEST, MessageAckCommand, MessageAckCommandHandler, MessageAckInput,
+};

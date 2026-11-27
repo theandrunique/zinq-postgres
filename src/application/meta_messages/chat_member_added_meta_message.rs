@@ -34,7 +34,7 @@ impl DomainEventHandler for ChatMemberAddedMetaMessage {
         let DomainEvent::ChatMemberAdd {
             chat_id,
             member,
-            initiator_id,
+            initiator,
         } = event
         else {
             return Ok(());
@@ -43,7 +43,7 @@ impl DomainEventHandler for ChatMemberAddedMetaMessage {
         let meta_message = Message::new_meta(CreateMetaMessageRequest {
             id: self.id_gen.gen_id().await,
             chat_id: *chat_id,
-            author_id: *initiator_id,
+            author_id: initiator.user_id,
             message_type: MessageType::MemberAdd {
                 user_id: member.user_id,
             },
@@ -59,7 +59,8 @@ impl DomainEventHandler for ChatMemberAddedMetaMessage {
             .publish(&DomainEvent::MessageCreate {
                 message: meta_message,
                 attachments: vec![],
-                initiator_id: *initiator_id,
+                initiator: initiator.clone(),
+                subject: Some(member.clone()),
             })
             .await?;
 

@@ -4,8 +4,8 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { auth } from "#lib/auth.svelte.ts";
-  import { Button, Loader } from "#lib/components/ui/index.ts";
+  import { auth } from "$lib/auth.svelte.ts";
+  import { Button, Loader } from "$lib/components/ui/index.ts";
 
   let {
     children,
@@ -40,7 +40,7 @@
       }
     } catch {
       checking = false;
-      authError = "Не удалось проверить сессию. Проверьте подключение и попробуйте снова.";
+      authError = "Couldn't verify your session. Check your connection and try again.";
     }
   }
 
@@ -55,7 +55,7 @@
     if (!auth.user && !isPublic) {
       void goto(resolve("/login"));
     } else if (auth.user && !auth.user.expired && isPublic) {
-      void goto(resolve("/"));
+      void goto(resolve("/chats"));
     }
   });
 
@@ -69,14 +69,14 @@
     class="flex min-h-screen flex-col items-center justify-center gap-(--space-2) bg-(--color-background-body) px-(--space-4) text-center"
   >
     <p class="text-(length:--font-size-sm) text-(--color-text-muted)">{authError}</p>
-    <Button onclick={retry}>Повторить</Button>
+    <Button onclick={retry}>Retry</Button>
   </div>
 {:else if checking}
   <div
     class="flex min-h-screen items-center justify-center gap-(--space-1) bg-(--color-background-body) px-(--space-4)"
   >
     <Loader size="sm" />
-    <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Проверка аутентификации…</p>
+    <p class="text-(length:--font-size-sm) text-(--color-text-muted)">Checking authentication…</p>
   </div>
 {:else}
   {@render children()}

@@ -4,6 +4,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     application::{
@@ -15,15 +16,20 @@ use crate::{
     state::AppState,
 };
 
+#[serde_as]
 #[derive(Deserialize)]
 pub struct AckMessagesRequest {
-    pub last_read_message_id: i64,
-    #[serde(default)]
+    /// Advances the read pointer. Omitted when only individual messages are
+    /// acknowledged while scrolling.
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub last_read_message_id: Option<i64>,
     pub acks: Vec<AckInputRequest>,
 }
 
+#[serde_as]
 #[derive(Deserialize)]
 pub struct AckInputRequest {
+    #[serde_as(as = "DisplayFromStr")]
     pub message_id: i64,
     pub acked_at: DateTime<Utc>,
 }

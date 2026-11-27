@@ -24,7 +24,7 @@ async fn test_get_dm_chat_existing() {
     };
 
     let result = handler.handle(cmd).await.expect("Should succeed");
-    assert_eq!(result.chat_type, ChatType::Dm);
+    assert_eq!(result.chat.chat_type, ChatType::Dm);
 }
 
 #[tokio::test]
@@ -41,8 +41,8 @@ async fn test_get_dm_chat_creates_new() {
     };
 
     let result = handler.handle(cmd).await.expect("Should succeed");
-    assert_eq!(result.chat_type, ChatType::Dm);
-    assert_eq!(result.members.len(), 2);
+    assert_eq!(result.chat.chat_type, ChatType::Dm);
+    assert_eq!(result.chat.members.len(), 2);
 }
 
 #[tokio::test]
@@ -78,6 +78,6 @@ async fn test_get_dm_chat_same_user() {
     };
 
     let result = handler.handle(cmd).await.expect("Should succeed");
-    assert_eq!(result.chat_type, ChatType::Dm);
-    assert_eq!(result.members.len(), 1);
+    assert_eq!(result.chat.chat_type, ChatType::Dm);
+    assert_eq!(result.chat.members.len(), 1);
 }

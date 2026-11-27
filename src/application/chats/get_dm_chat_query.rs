@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    application::RequestHandler,
+    application::{RequestHandler, chats::get_chat_query::ChatWithReferences},
     domain::{
         auth::data::user_repository::UserRepository,
-        chats::{Chat, ChatMember, data::ChatRepository},
+        chats::{Chat, ChatMember, data::ChatMemberRepository, data::ChatRepository},
     },
     error::Error,
     infra::IdGenerator,
@@ -21,6 +21,7 @@ pub struct GetDMChatCommandHandler {
     id_gen: Arc<dyn IdGenerator>,
     user_repository: Arc<dyn UserRepository>,
     chat_repository: Arc<dyn ChatRepository>,
+    chat_member_repository: Arc<dyn ChatMemberRepository>,
 }
 
 impl GetDMChatCommandHandler {
@@ -29,13 +30,14 @@ impl GetDMChatCommandHandler {
             id_gen: Arc::clone(&state.id_gen),
             user_repository: Arc::clone(&state.user_repository),
             chat_repository: Arc::clone(&state.chat_repository),
+            chat_member_repository: Arc::clone(&state.chat_member_repository),
         }
     }
 }
 
 impl RequestHandler for GetDMChatCommandHandler {
     type Request = GetDMChatCommand;
-    type Output = Chat;
+    type Output = ChatWithReferences;
     type Error = Error;
 
     async fn handle(&self, request: Self::Request) -> Result<Self::Output, Self::Error> {
@@ -45,8 +47,17 @@ impl RequestHandler for GetDMChatCommandHandler {
             .await
             .map_err(Error::InternalServerError)?;
 
-        if let Some(dm) = existing_dm {
-            return Ok(dm);
+        if let Some(chat) = existing_dm {
+            let referenced_members = self
+                .chat_member_repository
+                .get_members_by_ids(chat.id, &chat.member_ids_for_last_message())
+                .await
+                .map_err(Error::InternalServerError)?;
+
+            return Ok(ChatWithReferences {
+                chat,
+                referenced_members,
+            });
         }
 
         let user_ids_to_find = if request.current_user_id == request.user_id {
@@ -80,6 +91,9 @@ impl RequestHandler for GetDMChatCommandHandler {
             .await
             .map_err(Error::InternalServerError)?;
 
-        Ok(chat)
+        Ok(ChatWithReferences {
+            chat,
+            referenced_members: Default::default(),
+        })
     }
 }

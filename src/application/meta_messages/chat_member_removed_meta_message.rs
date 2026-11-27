@@ -34,13 +34,13 @@ impl DomainEventHandler for ChatMemberRemovedMetaMessage {
         let DomainEvent::ChatMemberRemove {
             chat_id,
             member,
-            initiator_id,
+            initiator,
         } = event
         else {
             return Ok(());
         };
 
-        let initiator_id_val = *initiator_id;
+        let initiator_id_val = initiator.user_id;
 
         let message_type = if member.user_id == initiator_id_val {
             MessageType::MemberLeave {
@@ -69,7 +69,8 @@ impl DomainEventHandler for ChatMemberRemovedMetaMessage {
             .publish(&DomainEvent::MessageCreate {
                 message: meta_message,
                 attachments: vec![],
-                initiator_id: initiator_id_val,
+                initiator: initiator.clone(),
+                subject: Some(member.clone()),
             })
             .await?;
 

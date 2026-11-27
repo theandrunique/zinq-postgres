@@ -4,4 +4,4 @@ mod chat_repository;
 
 pub use chat_loader::{ChatLoadOptions, ChatLoader};
 pub use chat_member_repository::ChatMemberRepository;
-pub use chat_repository::ChatRepository;
+pub use chat_repository::{ChatPageCursor, ChatRepository, UserChatsPage};

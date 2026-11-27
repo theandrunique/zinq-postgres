@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "bits-ui";
   import { cva, type VariantProps } from "class-variance-authority";
-  import { cn } from "#lib/utils";
+  import { cn } from "$lib/utils";
 
   const buttonVariants = cva(
     [

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -8,11 +9,10 @@ use crate::{
         chats::data::ChatRepository,
         events::{DomainEvent, DomainEventHandler},
     },
-    infra::{
-        data::{chat_repotisory, message_ack_repository},
-        id_generator,
+    routers::schemas::{
+        GatewayEventSchema,
+        common::{ChatSchema, MessageSchema},
     },
-    routers::schemas::GatewayEventSchema,
 };
 
 pub struct EventPublisher {
@@ -34,22 +34,34 @@ impl DomainEventHandler for EventPublisher {
     async fn handle(&self, event: &DomainEvent) -> Result<(), anyhow::Error> {
         let (gateway_event, chat_id) = match event {
             DomainEvent::MessageCreate {
-                initiator_id: _,
                 message,
                 attachments,
+                initiator,
+                subject,
             } => (
                 GatewayEventSchema::MessageCreate {
-                    message: (message.clone(), attachments.clone()).into(),
+                    message: MessageSchema::from_message(
+                        message.clone(),
+                        attachments.clone(),
+                        initiator,
+                        subject.as_ref(),
+                    )?,
                 },
                 message.chat_id,
             ),
             DomainEvent::MessageUpdate {
-                initiator_id: _,
                 message,
                 attachments,
+                initiator,
+                subject,
             } => (
                 GatewayEventSchema::MessageUpdate {
-                    message: (message.clone(), attachments.clone()).into(),
+                    message: MessageSchema::from_message(
+                        message.clone(),
+                        attachments.clone(),
+                        initiator,
+                        subject.as_ref(),
+                    )?,
                 },
                 message.chat_id,
             ),
@@ -65,13 +77,13 @@ impl DomainEventHandler for EventPublisher {
             DomainEvent::ChatCreate { chat } => (
                 {
                     GatewayEventSchema::ChatCreate {
-                        chat: chat.clone().into(),
+                        chat: ChatSchema::from_chat(chat.clone(), &HashMap::new())?,
                     }
                 },
                 chat.id,
             ),
             DomainEvent::ChatMemberAdd {
-                initiator_id: _,
+                initiator: _,
                 chat_id,
                 member,
             } => (
@@ -82,7 +94,7 @@ impl DomainEventHandler for EventPublisher {
                 *chat_id,
             ),
             DomainEvent::ChatMemberRemove {
-                initiator_id: _,
+                initiator: _,
                 chat_id,
                 member,
             } => (
